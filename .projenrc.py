@@ -6,6 +6,8 @@ project = PythonProject(
     module_name="pulumi_lambda_builders",
     name="pulumi-lambda-builders",
     version="0.1.0",
+    deps=["pulumi>=3.149,<4.0", "aws_lambda_builders"],
 )
 
 project.synth()
+

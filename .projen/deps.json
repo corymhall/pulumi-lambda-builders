@@ -6,6 +6,14 @@
       "type": "devenv"
     },
     {
+      "name": "aws_lambda_builders",
+      "type": "runtime"
+    },
+    {
+      "name": "pulumi>=3.149,<4.0",
+      "type": "runtime"
+    },
+    {
       "name": "pytest",
       "version": "7.4.3",
       "type": "test"
