@@ -17,16 +17,19 @@ class Architecture(Enum):
 
 
 @dataclass
-class BuildCustomMakeArgs:
+class BuildDotnetArgs:
     code: str
     """The path to the code to build
     This will be used as the source directory for the build
     and should contain the makefile
     """
 
-    make_target_id: str
-    """The make target id to build
-    The make target is expected to be in the format of `build-{make_target_id}`
+    runtime: str
+    """Node.js version to build dependencies for."""
+
+    build_options: Optional[dict] = None
+    """Additional command line flags to pass to the dotnet build command
+    The key should be prefixed with `-` or `--` like the cli argument
     """
 
     architecture: Optional[str] = "x86_64"
@@ -35,40 +38,38 @@ class BuildCustomMakeArgs:
     """
 
 
-class BuildCustomMake(pulumi.ComponentResource):
+class BuildDotnet(pulumi.ComponentResource):
     asset: FileArchive
     """The built code asset"""
 
     def __init__(
         self,
         name: str,
-        args: BuildCustomMakeArgs,
+        args: BuildDotnetArgs,
         opts: Optional[pulumi.ResourceOptions] = None,
     ) -> None:
-        super().__init__("pulumi-lambda-builders:index:BuildCustomMake", name, {}, opts)
-        result = build_go(args)
+        super().__init__("pulumi-lambda-builders:index:BuildDotnet", name, {}, opts)
+        result = build_dotnet(args)
         self.asset = result
 
 
-def build_go(args: BuildCustomMakeArgs) -> FileArchive:
-    builder = LambdaBuilder("provided", None, None)
+def build_dotnet(args: BuildDotnetArgs) -> FileArchive:
+    builder = LambdaBuilder("dotnet", "cli-package", None)
     tmp_dir = tempfile.mkdtemp()
     arch = args.architecture or "x86_64"
 
     # TODO: add extra validation
+    options = args.build_options
 
     try:
         builder.build(
             source_dir=args.code,
             artifacts_dir=tmp_dir,
             scratch_dir=tempfile.gettempdir(),
-            build_in_source=True,
             manifest_path=None,
-            runtime="provided",
+            runtime=args.runtime,
             architecture=arch,
-            options={
-                "build_logical_id": args.make_target_id,
-            },
+            options=options,
         )
     except LambdaBuilderError as err:
         raise ValueError(f"Failed to build code: {err}")

@@ -17,17 +17,13 @@ class Architecture(Enum):
 
 
 @dataclass
-class BuildCustomMakeArgs:
+class BuildJavaArgs:
     code: str
     """The path to the code to build
-    This will be used as the source directory for the build
-    and should contain the makefile
     """
 
-    make_target_id: str
-    """The make target id to build
-    The make target is expected to be in the format of `build-{make_target_id}`
-    """
+    runtime: str
+    """Java version to build dependencies for."""
 
     architecture: Optional[str] = "x86_64"
     """The Lambda architecture to build for
@@ -35,40 +31,53 @@ class BuildCustomMakeArgs:
     """
 
 
-class BuildCustomMake(pulumi.ComponentResource):
+class BuildJava(pulumi.ComponentResource):
     asset: FileArchive
     """The built code asset"""
 
     def __init__(
         self,
         name: str,
-        args: BuildCustomMakeArgs,
+        args: BuildJavaArgs,
         opts: Optional[pulumi.ResourceOptions] = None,
     ) -> None:
-        super().__init__("pulumi-lambda-builders:index:BuildCustomMake", name, {}, opts)
-        result = build_go(args)
+        super().__init__("pulumi-lambda-builders:index:BuildJava", name, {}, opts)
+        result = build_java(args)
         self.asset = result
 
 
-def build_go(args: BuildCustomMakeArgs) -> FileArchive:
-    builder = LambdaBuilder("provided", None, None)
+def build_java(args: BuildJavaArgs) -> FileArchive:
     tmp_dir = tempfile.mkdtemp()
     arch = args.architecture or "x86_64"
 
     # TODO: add extra validation
 
+    manifest_path = None
+    dependency_manager = None
+    if os.path.isfile(os.path.join(args.code, "build.gradle")):
+        manifest_path = os.path.join(args.code, "build.gradle")
+        dependency_manager = "gradle"
+    elif os.path.isfile(os.path.join(args.code, "build.gradle.kts")):
+        manifest_path = os.path.join(args.code, "build.gradle.kts")
+        dependency_manager = "gradle"
+    elif os.path.isfile(os.path.join(args.code, "pom.xml")):
+        manifest_path = os.path.join(args.code, "pom.xml")
+        dependency_manager = "maven"
+
+    if not manifest_path:
+        raise ValueError(
+            "No build.gradle, build.gradle.kts, or pom.xml found in code directory"
+        )
+
+    builder = LambdaBuilder("java", dependency_manager, None)
     try:
         builder.build(
             source_dir=args.code,
             artifacts_dir=tmp_dir,
             scratch_dir=tempfile.gettempdir(),
-            build_in_source=True,
-            manifest_path=None,
-            runtime="provided",
+            manifest_path=manifest_path,
+            runtime=args.runtime,
             architecture=arch,
-            options={
-                "build_logical_id": args.make_target_id,
-            },
         )
     except LambdaBuilderError as err:
         raise ValueError(f"Failed to build code: {err}")

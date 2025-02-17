@@ -11,9 +11,9 @@
 Pulumi Lambda Builders is a library that provides utilities for easily
 building/bundling Lambda Function code. The library will eventually support the below languages/build tools.
 
-- [ ] Java with Gradle
-- [ ] Java with Maven
-- [ ] Dotnet with amazon.lambda.tools
+- [X] Java with Gradle
+- [X] Java with Maven
+- [X] Dotnet with amazon.lambda.tools
 - [X] Python with Pip
 - [ ] Javascript with Npm
 - [X] Typescript with esbuild
