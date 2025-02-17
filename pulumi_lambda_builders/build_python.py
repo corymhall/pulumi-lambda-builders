@@ -2,17 +2,19 @@ from dataclasses import dataclass
 import pulumi
 from enum import Enum
 import os
-from typing import Optional, TypedDict
+from typing import List, Optional
 import tempfile
 from aws_lambda_builders.builder import LambdaBuilder
 from pulumi.asset import FileArchive
 from pulumi.log import warn
+from aws_lambda_builders.validator import SUPPORTED_RUNTIMES
 from aws_lambda_builders.exceptions import (
     LambdaBuilderError,
-    UnsupportedArchitectureError,
 )
 
 from aws_lambda_builders.workflows.python_pip.utils import OSUtils
+
+from pulumi_lambda_builders.utils import find_up
 
 
 class Architecture(Enum):
@@ -30,17 +32,11 @@ class BuildPythonArgs:
     'python3.9', 'python3.10', 'python3.11', or 'python3.12'
     """
 
-    architecture: Optional[str] = None
+    architecture: Optional[str] = "x86_64"
     """The Lambda architecture to build for"""
 
     requirements_path: Optional[str] = None
     """Path to the requirements.txt file to inspect for a list of dependencies"""
-
-    download_dependencies: Optional[bool] = None
-    """If set to true, builder will run pip install -r requirements.txt"""
-
-    dependencies_dir: Optional[str] = None
-    """A directory which contains the python dependencies."""
 
 
 class BuildPython(pulumi.ComponentResource):
@@ -58,52 +54,66 @@ class BuildPython(pulumi.ComponentResource):
         self.asset = result
 
 
+def validate_args(args: BuildPythonArgs):
+    errors: List[pulumi.InputPropertyErrorDetails] = []
+    python_runtimes = [
+        runtime for runtime in SUPPORTED_RUNTIMES if runtime.startswith("python")
+    ]
+    if args.runtime not in python_runtimes:
+        errors.append(
+            {
+                "property_path": "runtime",
+                "reason": f"Runtime must be one of {', '.join(python_runtimes)}",
+            }
+        )
+
+    if args.architecture not in [
+        Architecture.ARM_64.value,
+        Architecture.X86_64.value,
+    ]:
+        errors.append(
+            {
+                "property_path": "architecture",
+                "reason": f"Architecture must be one of {Architecture.ARM_64.value}, {Architecture.X86_64.value}",
+            }
+        )
+
+    if args.requirements_path != None:
+        if not os.path.isfile(args.requirements_path):
+            errors.append(
+                {
+                    "property_path": "requirements_path",
+                    "reason": f"requirements.txt not found at path provided: {args.requirements_path}",
+                }
+            )
+
+    for error in errors:
+        print(f"Invalid argument for {error['property_path']}: {error['reason']}")
+    if errors.__len__() > 0:
+        raise pulumi.InputPropertiesError("Invalid arguments", errors)
+
+
 def build_python(args: BuildPythonArgs) -> FileArchive:
-    osutils = OSUtils()
     builder = LambdaBuilder("python", "pip", None)
     tmp_dir = tempfile.mkdtemp()
     arch = args.architecture or Architecture.X86_64.value
-    code = args.code
+    code = os.path.abspath(args.code)
+
+    validate_args(args)
 
     req = os.path.join(code, "requirements.txt")
     if args.requirements_path != None:
         req = args.requirements_path
-        if not osutils.file_exists(req):
-            raise ValueError(
-                f"requirements.txt not found at path provided: {args.requirements_path}"
-            )
 
-    found = osutils.file_exists(req)
-    dir = os.path.dirname(req)
-    while not found:
-        parent = os.path.dirname(dir)
-        if parent == "":
-            warn(
-                "requirements.txt file not found. Continuing the build without dependencies."
-            )
-            found = True
-            break
-        dir_contents = os.listdir(parent)
-        if "requirements.txt" in dir_contents:
-            req = os.path.join(parent, "requirements.txt")
-            found = True
-        else:
-            dir = parent
-
-    if args.runtime not in [
-        "python3.8",
-        "python3.9",
-        "python3.10",
-        "python3.11",
-        "python3.12",
-    ]:
-        raise ValueError(
-            "Runtime must be one of 'python3.8', 'python3.9', 'python3.10', 'python3.11', or 'python3.12'"
+    req = find_up("requirements.txt", code)
+    if not req:
+        warn(
+            "requirements.txt file not found. Continuing the build without dependencies."
         )
 
-    download_dependencies = True
-    if args.download_dependencies != None:
-        args.download_dependencies = args.download_dependencies
+    if not os.path.isdir(code):
+        code = os.path.dirname(code)
+        warn(f"code path is not a directory, using parent directory {code} instead")
 
     try:
         builder.build(
@@ -113,14 +123,7 @@ def build_python(args: BuildPythonArgs) -> FileArchive:
             manifest_path=req,
             runtime=args.runtime,
             architecture=arch,
-            dependencies_dir=args.dependencies_dir,
-            download_dependencies=download_dependencies,
         )
-    except UnsupportedArchitectureError as err:
-        print(err)
-        raise ValueError("Unsupported architecture")
-    # The only two input properties are code & architecture & lambda_builders only throws a specific
-    # error for architecture. The rest of the errors we can return as generic errors
     except LambdaBuilderError as err:
         raise ValueError(f"Failed to build Python code: {err}")
 

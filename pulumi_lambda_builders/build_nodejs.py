@@ -3,15 +3,16 @@ import pulumi
 from enum import Enum
 import os
 import re
-from typing import Optional, TypedDict, List
+from typing import Optional, List
 import tempfile
 from aws_lambda_builders.builder import LambdaBuilder
 from aws_lambda_builders.validator import SUPPORTED_RUNTIMES
 from pulumi.asset import FileArchive
 from aws_lambda_builders.exceptions import (
     LambdaBuilderError,
-    UnsupportedArchitectureError,
 )
+
+from pulumi_lambda_builders.utils import find_up
 
 
 class Architecture(Enum):
@@ -19,10 +20,8 @@ class Architecture(Enum):
     X86_64 = "x86_64"
 
 
-@dataclass
-class EsbuildOptions:
-    external: Optional[List[str]] = None
-    """Specifies the list of packages to omit from the build"""
+# @dataclass
+# class EsbuildOptions:
 
 
 @dataclass
@@ -45,13 +44,15 @@ class BuildNodejsArgs:
     """
 
     external: Optional[List[str]] = None
-    """Specifies the list of packages to omit from the build"""
+    """Specifies the list of packages to omit from the build
+    :default: ["@aws-sdk/*", "@smithy/*"]
+    """
 
     architecture: Optional[str] = "x86_64"
     """The Lambda architecture to build for"""
 
-    bundler: Optional[str] = "npm-esbuild"
-    """The bundler to use for building the code. Valid values are 'npm-esbuild' or 'npm'"""
+    # bundler: Optional[str] = "npm-esbuild"
+    # """The bundler to use for building the code. Valid values are 'npm-esbuild' or 'npm'"""
 
     bundle_aws_sdk: Optional[bool] = False
     """Includes the AWS SDK in the bundle asset
@@ -59,8 +60,9 @@ class BuildNodejsArgs:
     if set to true, the AWS SDK will be included in the bundle asset
     and not be resolved to the Lambda provided SDK"""
 
-    esbuild_options: Optional[EsbuildOptions] = None
-    """Extra config options for the esbuild bundler"""
+    # TODO: Add support for other esbuild options
+    # esbuild_options: Optional[EsbuildOptions] = None
+    # """Extra config options for the esbuild bundler"""
 
     minify: Optional[bool] = True
     """Whether to minify the output. Not supported for 'npm' bundler"""
@@ -107,13 +109,13 @@ def validate_args(args: BuildNodejsArgs):
             }
         )
 
-    if args.bundler not in ["npm-esbuild", "npm"]:
-        errors.append(
-            {
-                "property_path": "bundler",
-                "reason": "Bundler must be one of 'npm-esbuild' or 'npm'",
-            }
-        )
+    # if args.bundler not in ["npm-esbuild", "npm"]:
+    #     errors.append(
+    #         {
+    #             "property_path": "bundler",
+    #             "reason": "Bundler must be one of 'npm-esbuild' or 'npm'",
+    #         }
+    #     )
 
     if args.architecture not in [
         Architecture.ARM_64.value,
@@ -133,7 +135,7 @@ def validate_args(args: BuildNodejsArgs):
                 "reason": "Entry file must be a JavaScript or TypeScript file",
             }
         )
-    if not os.path.exists(args.entry):
+    if not os.path.exists(os.path.abspath(args.entry)):
         errors.append(
             {
                 "property_path": "entry",
@@ -141,12 +143,13 @@ def validate_args(args: BuildNodejsArgs):
             }
         )
 
+    for error in errors:
+        print(f"Invalid argument for {error['property_path']}: {error['reason']}")
     if errors.__len__() > 0:
         raise pulumi.InputPropertiesError("Invalid arguments", errors)
 
 
 def build_nodejs(args: BuildNodejsArgs) -> FileArchive:
-    builder = LambdaBuilder("nodejs", args.bundler, None)
     tmp_dir = tempfile.mkdtemp()
 
     default_externals = ["@aws-sdk/*", "@smithy/*"]
@@ -162,7 +165,7 @@ def build_nodejs(args: BuildNodejsArgs) -> FileArchive:
             "Cannot find package-lock.json file. Please provide the path to the file",
         )
     project_dir = os.path.dirname(lock_file)
-    relative_entry_path = os.path.relpath(project_dir, os.path.abspath(args.entry))
+    relative_entry_path = os.path.relpath(os.path.abspath(args.entry), project_dir)
 
     target = args.target
     if not target:
@@ -189,9 +192,10 @@ def build_nodejs(args: BuildNodejsArgs) -> FileArchive:
         "target": target,
     }
 
-    if args.format == "ems":
+    if args.format == "esm":
         options["out_extensions"] = [".js=.mjs"]
 
+    builder = LambdaBuilder("nodejs", "npm-esbuild", None)
     try:
         builder.build(
             source_dir=project_dir,
@@ -206,13 +210,8 @@ def build_nodejs(args: BuildNodejsArgs) -> FileArchive:
             architecture=args.architecture or Architecture.X86_64.value,
             options=options,
         )
-    except UnsupportedArchitectureError as err:
-        print(err)
-        raise ValueError("Unsupported architecture")
-    # The only two input properties are code & architecture & lambda_builders only throws a specific
-    # error for architecture. The rest of the errors we can return as generic errors
     except LambdaBuilderError as err:
-        raise ValueError(f"Failed to build Go code: {err}")
+        raise ValueError(f"Failed to build Nodejs code: {err}")
 
     return FileArchive(tmp_dir)
 
@@ -230,24 +229,4 @@ def find_lock_file(lock_file_path: Optional[str]) -> Optional[str]:
                 f"Lock file path must be a file, got {lock_file_path}",
             )
         return lock_file_path
-    return find_up("package-lock.json")
-
-
-def find_up(filename: str, dir: str = os.getcwd()) -> Optional[str]:
-    if os.path.exists(os.path.join(dir, filename)):
-        return os.path.join(dir, filename)
-    if dir == get_root_directory(dir):
-        return None
-    return find_up(filename, os.path.dirname(dir))
-
-
-def get_root_directory(path: str) -> str:
-    # Split the drive and path
-    drive, _ = os.path.splitdrive(path)
-
-    # For Unix-like systems, the root is simply '/'
-    if path.startswith("/"):
-        return "/"
-
-    # For Windows, return the drive as the root
-    return drive
+    return find_up("package-lock.json", os.getcwd())

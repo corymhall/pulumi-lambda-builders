@@ -9,5 +9,6 @@ project = PythonProject(
     deps=["pulumi>=3.149,<4.0", "aws_lambda_builders"],
 )
 
-project.synth()
+project.add_git_ignore("node_modules")
 
+project.synth()

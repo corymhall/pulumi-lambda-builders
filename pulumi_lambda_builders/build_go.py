@@ -2,7 +2,7 @@ from dataclasses import dataclass
 import pulumi
 from enum import Enum
 import os
-from typing import Optional, TypedDict
+from typing import Optional
 import tempfile
 from aws_lambda_builders.builder import LambdaBuilder
 from pulumi.asset import FileArchive
@@ -18,12 +18,14 @@ class Architecture(Enum):
 
 
 @dataclass
-class BuildGoArgs(TypedDict):
+class BuildGoArgs:
     code: str
     """The path to the code to build"""
 
-    architecture: Optional[str]
-    """The Lambda architecture to build for"""
+    architecture: Optional[str] = "x86_64"
+    """The Lambda architecture to build for
+    :default: x86_64
+    """
 
 
 class BuildGo(pulumi.ComponentResource):
@@ -44,17 +46,17 @@ class BuildGo(pulumi.ComponentResource):
 def build_go(args: BuildGoArgs) -> FileArchive:
     builder = LambdaBuilder("go", "modules", None)
     tmp_dir = tempfile.mkdtemp()
-    arch = args["architecture"] or Architecture.X86_64.value
+    arch = args.architecture or "x86_64"
 
     try:
         builder.build(
-            source_dir=args["code"],
+            source_dir=args.code,
             artifacts_dir=tmp_dir,
             scratch_dir=tempfile.gettempdir(),
             # manifest_path is a required argument, but is not
             # actually used by the go builder so it doesn't _really_ matter
             # what this value is.
-            manifest_path=os.path.join(args["code"], "go.mod"),
+            manifest_path=os.path.join(args.code, "go.mod"),
             runtime="provided",
             architecture=arch,
         )

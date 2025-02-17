@@ -1,0 +1,12 @@
+{
+    "name": "nodejs-example",
+    "version": "0.1.0",
+    "license": "Apache-2.0",
+    "scripts": {
+        "build": "tsc"
+    },
+    "devDependencies": {
+        "@aws-sdk/client-dynamodb": "3.632.0",
+        "@types/node": "^22.13.4"
+    }
+}

@@ -83,4 +83,5 @@ dmypy.json
 .pyre/
 .pytype/
 cython_debug/
+node_modules
 !/.projenrc.py
