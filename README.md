@@ -20,6 +20,7 @@ building/bundling Lambda Function code. The library will eventually support the 
 - [ ] Ruby with Bundler
 - [X] Go with Mod
 - [ ] Rust with Cargo
+- [X] Custom with Makefile
 
 This library integrates with the
 [aws-lambda-builders](https://github.com/aws/aws-lambda-builders) library which

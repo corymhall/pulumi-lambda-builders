@@ -15,7 +15,7 @@ def test_esbuild():
         args=BuildNodejsArgs(
             entry=os.path.join(TEST_DATA_FOLDER, "app/index.ts"),
             runtime="nodejs18.x",
-            lock_file_path=os.path.join(TEST_DATA_FOLDER, "package-lock.json"),
+            package_json_path=os.path.join(TEST_DATA_FOLDER, "package-lock.json"),
         )
     )
 

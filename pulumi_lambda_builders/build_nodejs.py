@@ -32,10 +32,10 @@ class BuildNodejsArgs:
     runtime: str
     """Node.js version to build dependencies for."""
 
-    lock_file_path: Optional[str] = None
-    """Path to the package-lock.json file to use for installing dependencies
+    package_json_path: Optional[str] = None
+    """Path to the package.json file to use for installing dependencies
     :default: the path is found by walking up parent directories searching for
-    a package-lock.json file
+    a package.json file
     """
 
     node_modules_path: Optional[str] = None
@@ -109,14 +109,6 @@ def validate_args(args: BuildNodejsArgs):
             }
         )
 
-    # if args.bundler not in ["npm-esbuild", "npm"]:
-    #     errors.append(
-    #         {
-    #             "property_path": "bundler",
-    #             "reason": "Bundler must be one of 'npm-esbuild' or 'npm'",
-    #         }
-    #     )
-
     if args.architecture not in [
         Architecture.ARM_64.value,
         Architecture.X86_64.value,
@@ -158,13 +150,13 @@ def build_nodejs(args: BuildNodejsArgs) -> FileArchive:
 
     validate_args(args)
 
-    lock_file = find_lock_file(args.lock_file_path)
-    if not lock_file:
+    manifest_file = find_lock_file(args.package_json_path)
+    if not manifest_file:
         raise pulumi.InputPropertyError(
             "lock_file_path",
             "Cannot find package-lock.json file. Please provide the path to the file",
         )
-    project_dir = os.path.dirname(lock_file)
+    project_dir = os.path.dirname(manifest_file)
     relative_entry_path = os.path.relpath(os.path.abspath(args.entry), project_dir)
 
     target = args.target
@@ -192,6 +184,16 @@ def build_nodejs(args: BuildNodejsArgs) -> FileArchive:
         "target": target,
     }
 
+    if download_dependencies == True:
+        found = find_up("package-lock.json", os.getcwd())
+        if found is not None:
+            options["use_npm_ci"] = True
+        else:
+            pulumi.warn(
+                "node_modules not found and package-lock.json not found, installing dependencies using npm install --production"
+            )
+        pulumi.warn("node_modules not found, installing dependencies using npm ci")
+
     if args.format == "esm":
         options["out_extensions"] = [".js=.mjs"]
 
@@ -201,7 +203,7 @@ def build_nodejs(args: BuildNodejsArgs) -> FileArchive:
             source_dir=project_dir,
             artifacts_dir=tmp_dir,
             scratch_dir=tempfile.gettempdir(),
-            manifest_path=lock_file,
+            manifest_path=manifest_file,
             download_dependencies=download_dependencies,
             dependencies_dir=node_modules_path,
             # TODO: I think this is what we want, but do we let the user config?
@@ -229,4 +231,4 @@ def find_lock_file(lock_file_path: Optional[str]) -> Optional[str]:
                 f"Lock file path must be a file, got {lock_file_path}",
             )
         return lock_file_path
-    return find_up("package-lock.json", os.getcwd())
+    return find_up("package.json", os.getcwd())
