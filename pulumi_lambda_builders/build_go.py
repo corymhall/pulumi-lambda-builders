@@ -53,10 +53,8 @@ def build_go(args: BuildGoArgs) -> FileArchive:
             source_dir=args.code,
             artifacts_dir=tmp_dir,
             scratch_dir=tempfile.gettempdir(),
-            # manifest_path is a required argument, but is not
-            # actually used by the go builder so it doesn't _really_ matter
-            # what this value is.
-            manifest_path=os.path.join(args.code, "go.mod"),
+            manifest_path=None,
+            build_in_source=True,
             runtime="provided",
             architecture=arch,
         )

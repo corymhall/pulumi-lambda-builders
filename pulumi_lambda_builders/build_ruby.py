@@ -17,19 +17,14 @@ class Architecture(Enum):
 
 
 @dataclass
-class BuildDotnetArgs:
+class BuildRubyArgs:
     code: str
     """The path to the code to build
     This will be used as the source directory for the build
     """
 
     runtime: str
-    """Dotnet version to build dependencies for."""
-
-    build_options: Optional[dict] = None
-    """Additional command line flags to pass to the dotnet build command
-    The key should be prefixed with `-` or `--` like the cli argument
-    """
+    """Ruby version to build dependencies for."""
 
     architecture: Optional[str] = "x86_64"
     """The Lambda architecture to build for
@@ -37,28 +32,27 @@ class BuildDotnetArgs:
     """
 
 
-class BuildDotnet(pulumi.ComponentResource):
+class BuildRuby(pulumi.ComponentResource):
     asset: FileArchive
     """The built code asset"""
 
     def __init__(
         self,
         name: str,
-        args: BuildDotnetArgs,
+        args: BuildRubyArgs,
         opts: Optional[pulumi.ResourceOptions] = None,
     ) -> None:
-        super().__init__("pulumi-lambda-builders:index:BuildDotnet", name, {}, opts)
-        result = build_dotnet(args)
+        super().__init__("pulumi-lambda-builders:index:BuildRuby", name, {}, opts)
+        result = build_ruby(args)
         self.asset = result
 
 
-def build_dotnet(args: BuildDotnetArgs) -> FileArchive:
-    builder = LambdaBuilder("dotnet", "cli-package", None)
+def build_ruby(args: BuildRubyArgs) -> FileArchive:
+    builder = LambdaBuilder("ruby", "bundler", None)
     tmp_dir = tempfile.mkdtemp()
     arch = args.architecture or "x86_64"
 
     # TODO: add extra validation
-    options = args.build_options
 
     try:
         builder.build(
@@ -68,7 +62,6 @@ def build_dotnet(args: BuildDotnetArgs) -> FileArchive:
             manifest_path=None,
             runtime=args.runtime,
             architecture=arch,
-            options=options,
         )
     except LambdaBuilderError as err:
         raise ValueError(f"Failed to build code: {err}")

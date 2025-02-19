@@ -1,4 +1,4 @@
-from projen.python import PythonProject
+from projen.python import PythonProject, VenvOptions
 
 project = PythonProject(
     author_email="43035978+corymhall@users.noreply.github.com",
@@ -7,6 +7,7 @@ project = PythonProject(
     name="pulumi-lambda-builders",
     version="0.1.0",
     deps=["pulumi>=3.149,<4.0", "aws_lambda_builders"],
+    venv_options=VenvOptions(envdir="venv"),
 )
 
 project.add_git_ignore("node_modules")

@@ -16,10 +16,10 @@ building/bundling Lambda Function code. The library will eventually support the 
 - [X] Dotnet with amazon.lambda.tools
 - [X] Python with Pip
 - [ ] Javascript with Npm
-- [X] Typescript with esbuild
-- [ ] Ruby with Bundler
+- [X] Typescript/JavaScript with esbuild
+- [X] Ruby with Bundler
 - [X] Go with Mod
-- [ ] Rust with Cargo
+- [X] Rust with Cargo
 - [X] Custom with Makefile
 
 This library integrates with the
@@ -50,7 +50,7 @@ test_lambda = aws.lambda_.Function("my_lambda",
 )
 ```
 
-## TypeScript with Esbuild
+## TypeScript/JavaScript with Esbuild
 
 ```ts
 import * as path from 'path';
@@ -93,7 +93,7 @@ func main() {
 		_, err = lambda.NewFunction(ctx, "my_lambda", &lambda.FunctionArgs{
 			Code:           code.Asset,
 			Role:           iamForLambda.Arn,
-			Handler:        pulumi.String("index.test"),
+			Handler:        pulumi.String("bootstrap"),
 			Runtime:        pulumi.String(lambda.RuntimeCustomAL2023),
 		})
 		if err != nil {
@@ -104,6 +104,44 @@ func main() {
 }
 ```
 
+## Custom build with Makefile
+
+If one of the existing language builders does not work for your use case or you
+need to customize the build in a way that the existing builder does not allow,
+you can use a Makefile with a specific build target.
+
+You provide a custom makefile, where you declare a build target of the form
+build-{some-build-id} that contains the build commands for your runtime.
+Your makefile is responsible for compiling the custom runtime if necessary, and
+copying the build artifacts into the artifacts directory that is specified in
+the `$(ARTIFACTS_DIR)` env var.
+
+```ts
+import * as path from 'path';
+import * as pulumi from '@pulumi/pulumi';
+import * as aws from '@pulumi/aws';
+import * as builder from '@pulumi/lambda-builder';
+
+const code = new builder.BuildCustomMakefile('builder', {
+  entry: path.join(__dirname, 'path/to/dir/with/makefile'),
+  make_target_id: 'hello-world',
+});
+
+new aws.lambda.Function('my-lambda', {
+  code: code.asset,
+  role: iamForLambda.arn,
+  handler: 'bootstrap',
+  runtime=aws.lambda.Runtime.RuntimeCustomAL2023,
+});
+```
+
+**Makefile**
+
+```makefile
+build-hello-world:
+  GOOS=linux GOARCH=arm64 go build -o $(ARTIFACTS_DIR)/bootstrap -ldflags "-s -w"
+```
+
 ## References
 
-* TODO: [Examples]()
+* TODO: Full docs for each builder

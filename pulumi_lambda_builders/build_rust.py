@@ -17,18 +17,10 @@ class Architecture(Enum):
 
 
 @dataclass
-class BuildDotnetArgs:
+class BuildRustArgs:
     code: str
     """The path to the code to build
     This will be used as the source directory for the build
-    """
-
-    runtime: str
-    """Dotnet version to build dependencies for."""
-
-    build_options: Optional[dict] = None
-    """Additional command line flags to pass to the dotnet build command
-    The key should be prefixed with `-` or `--` like the cli argument
     """
 
     architecture: Optional[str] = "x86_64"
@@ -36,37 +28,55 @@ class BuildDotnetArgs:
     :default: x86_64
     """
 
+    binary_name: Optional[str] = None
+    """The name of the binary to build
+    This is only needed if you are building a project using cargo workspaces
+    """
 
-class BuildDotnet(pulumi.ComponentResource):
+    cargo_flags: Optional[dict] = None
+    """Additional flags to pass to cargo when building the code
+    The keys should be prefixed with `--` (just like CLI flags)"""
+
+
+class BuildRust(pulumi.ComponentResource):
     asset: FileArchive
     """The built code asset"""
 
     def __init__(
         self,
         name: str,
-        args: BuildDotnetArgs,
+        args: BuildRustArgs,
         opts: Optional[pulumi.ResourceOptions] = None,
     ) -> None:
-        super().__init__("pulumi-lambda-builders:index:BuildDotnet", name, {}, opts)
-        result = build_dotnet(args)
+        super().__init__("pulumi-lambda-builders:index:BuildRust", name, {}, opts)
+        result = build_rust(args)
         self.asset = result
 
 
-def build_dotnet(args: BuildDotnetArgs) -> FileArchive:
-    builder = LambdaBuilder("dotnet", "cli-package", None)
+def build_rust(args: BuildRustArgs) -> FileArchive:
+    builder = LambdaBuilder("rust", "cargo", None)
     tmp_dir = tempfile.mkdtemp()
     arch = args.architecture or "x86_64"
 
     # TODO: add extra validation
-    options = args.build_options
+
+    options = {}
+    if args.binary_name:
+        options["artifact_executable_name"] = args.binary_name
+    if args.cargo_flags:
+        options["cargo_lambda_flags"] = args.cargo_flags
 
     try:
         builder.build(
             source_dir=args.code,
+            experimental_flags={
+                "experimentalCargoLambda": True,
+            },
+            build_in_source=True,
             artifacts_dir=tmp_dir,
             scratch_dir=tempfile.gettempdir(),
             manifest_path=None,
-            runtime=args.runtime,
+            runtime="provided",
             architecture=arch,
             options=options,
         )
