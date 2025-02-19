@@ -1,8 +1,6 @@
-from dataclasses import dataclass
 import pulumi
 from enum import Enum
-import os
-from typing import Optional
+from typing import Dict, Optional, TypedDict
 import tempfile
 from aws_lambda_builders.builder import LambdaBuilder
 from pulumi.asset import FileArchive
@@ -16,8 +14,7 @@ class Architecture(Enum):
     X86_64 = "x86_64"
 
 
-@dataclass
-class BuildDotnetArgs:
+class BuildDotnetArgs(TypedDict):
     code: str
     """The path to the code to build
     This will be used as the source directory for the build
@@ -26,15 +23,13 @@ class BuildDotnetArgs:
     runtime: str
     """Dotnet version to build dependencies for."""
 
-    build_options: Optional[dict] = None
+    build_options: Optional[Dict[str, str]]
     """Additional command line flags to pass to the dotnet build command
     The key should be prefixed with `-` or `--` like the cli argument
     """
 
-    architecture: Optional[str] = "x86_64"
-    """The Lambda architecture to build for
-    :default: x86_64
-    """
+    architecture: Optional[str]
+    """The Lambda architecture to build for"""
 
 
 class BuildDotnet(pulumi.ComponentResource):
@@ -50,23 +45,28 @@ class BuildDotnet(pulumi.ComponentResource):
         super().__init__("lambda-builders:index:BuildDotnet", name, {}, opts)
         result = build_dotnet(args)
         self.asset = result
+        self.register_outputs(
+            {
+                "asset": self.asset,
+            }
+        )
 
 
 def build_dotnet(args: BuildDotnetArgs) -> FileArchive:
     builder = LambdaBuilder("dotnet", "cli-package", None)
     tmp_dir = tempfile.mkdtemp()
-    arch = args.architecture or "x86_64"
+    arch = args.get("architecture") or "x86_64"
 
     # TODO: add extra validation
-    options = args.build_options
+    options = args.get("build_options")
 
     try:
         builder.build(
-            source_dir=args.code,
+            source_dir=args.get("code"),
             artifacts_dir=tmp_dir,
             scratch_dir=tempfile.gettempdir(),
             manifest_path=None,
-            runtime=args.runtime,
+            runtime=args.get("runtime"),
             architecture=arch,
             options=options,
         )

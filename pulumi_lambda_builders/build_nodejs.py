@@ -1,9 +1,8 @@
-from dataclasses import dataclass
 import pulumi
 from enum import Enum
 import os
 import re
-from typing import Optional, List
+from typing import Optional, List, TypedDict
 import tempfile
 from aws_lambda_builders.builder import LambdaBuilder
 from aws_lambda_builders.validator import SUPPORTED_RUNTIMES
@@ -20,41 +19,33 @@ class Architecture(Enum):
     X86_64 = "x86_64"
 
 
-# @dataclass
-# class EsbuildOptions:
-
-
-@dataclass
-class BuildNodejsArgs:
+class BuildNodejsArgs(TypedDict):
     entry: str
     """Path to the entry file (JavaScript or TypeScript)."""
 
     runtime: str
     """Node.js version to build dependencies for."""
 
-    package_json_path: Optional[str] = None
+    package_json_path: Optional[str]
     """Path to the package.json file to use for installing dependencies
     :default: the path is found by walking up parent directories searching for
     a package.json file
     """
 
-    node_modules_path: Optional[str] = None
+    node_modules_path: Optional[str]
     """Path to the node_modules directory.
     :default: The path will be assumed to be in the same directory as the package-lock.json file
     """
 
-    external: Optional[List[str]] = None
+    external: Optional[List[str]]
     """Specifies the list of packages to omit from the build
     :default: ["@aws-sdk/*", "@smithy/*"]
     """
 
-    architecture: Optional[str] = "x86_64"
+    architecture: Optional[str]
     """The Lambda architecture to build for"""
 
-    # bundler: Optional[str] = "npm-esbuild"
-    # """The bundler to use for building the code. Valid values are 'npm-esbuild' or 'npm'"""
-
-    bundle_aws_sdk: Optional[bool] = False
+    bundle_aws_sdk: Optional[bool]
     """Includes the AWS SDK in the bundle asset
     :default: false
     if set to true, the AWS SDK will be included in the bundle asset
@@ -64,15 +55,15 @@ class BuildNodejsArgs:
     # esbuild_options: Optional[EsbuildOptions] = None
     # """Extra config options for the esbuild bundler"""
 
-    minify: Optional[bool] = True
+    minify: Optional[bool]
     """Whether to minify the output. Not supported for 'npm' bundler"""
 
-    format: Optional[str] = "cjs"
+    format: Optional[str]
     """This sets the output format for the generated JavaScript files.
     There are currently three possible values that can be configured: iife, cjs, and esm.
     """
 
-    target: Optional[str] = None
+    target: Optional[str]
     """This sets the target environment for the generated JavaScript files.
     :default: The target is determined from the runtime
     """
@@ -92,6 +83,11 @@ class BuildNodejs(pulumi.ComponentResource):
 
         result = build_nodejs(args)
         self.asset = result
+        self.register_outputs(
+            {
+                "asset": self.asset,
+            }
+        )
 
 
 def validate_args(args: BuildNodejsArgs):
@@ -101,7 +97,7 @@ def validate_args(args: BuildNodejsArgs):
         for runtime in SUPPORTED_RUNTIMES
         if runtime.startswith("nodejs") and runtime != "nodejs16.x"
     ]
-    if args.runtime not in nodejs_runtimes:
+    if args.get("runtime") not in nodejs_runtimes:
         errors.append(
             {
                 "property_path": "runtime",
@@ -109,7 +105,7 @@ def validate_args(args: BuildNodejsArgs):
             }
         )
 
-    if args.architecture not in [
+    if args.get("architecture") not in [
         Architecture.ARM_64.value,
         Architecture.X86_64.value,
     ]:
@@ -120,18 +116,18 @@ def validate_args(args: BuildNodejsArgs):
             }
         )
 
-    if not re.search(r"\.(js|ts)$", args.entry):
+    if not re.search(r"\.(js|ts)$", args.get("entry")):
         errors.append(
             {
                 "property_path": "entry",
                 "reason": "Entry file must be a JavaScript or TypeScript file",
             }
         )
-    if not os.path.exists(os.path.abspath(args.entry)):
+    if not os.path.exists(os.path.abspath(args.get("entry"))):
         errors.append(
             {
                 "property_path": "entry",
-                "reason": f"Cannot find entry file at {args.entry}",
+                "reason": f"Cannot find entry file at {args.get("entry")}",
             }
         )
 
@@ -144,24 +140,27 @@ def validate_args(args: BuildNodejsArgs):
 def build_nodejs(args: BuildNodejsArgs) -> FileArchive:
     tmp_dir = tempfile.mkdtemp()
 
-    default_externals = ["@aws-sdk/*", "@smithy/*"]
+    args["architecture"] = args.get("architecture") or Architecture.X86_64.value
 
-    externals = args.external or default_externals
+    default_externals = ["@aws-sdk/*", "@smithy/*"]
+    externals = args.get("external") or default_externals
 
     validate_args(args)
 
-    manifest_file = find_lock_file(args.package_json_path)
+    manifest_file = find_lock_file(args.get("package_json_path"))
     if not manifest_file:
         raise pulumi.InputPropertyError(
             "lock_file_path",
-            "Cannot find package-lock.json file. Please provide the path to the file",
+            "Cannot find package.json file. Please provide the path to the file",
         )
     project_dir = os.path.dirname(manifest_file)
-    relative_entry_path = os.path.relpath(os.path.abspath(args.entry), project_dir)
+    relative_entry_path = os.path.relpath(
+        os.path.abspath(args.get("entry")), project_dir
+    )
 
-    target = args.target
+    target = args.get("target")
     if not target:
-        match = re.search(r"nodejs(\d+)", args.runtime)
+        match = re.search(r"nodejs(\d+)", args.get("runtime"))
         if not match or not match.group(1):
             raise pulumi.InputPropertyError(
                 "target",
@@ -170,7 +169,7 @@ def build_nodejs(args: BuildNodejsArgs) -> FileArchive:
         target = f"node{match.group(1)}"
 
     download_dependencies = True
-    node_modules_path = args.node_modules_path or os.path.join(
+    node_modules_path = args.get("node_modules_path") or os.path.join(
         project_dir, "node_modules"
     )
     if os.path.exists(node_modules_path):
@@ -179,8 +178,8 @@ def build_nodejs(args: BuildNodejsArgs) -> FileArchive:
     options = {
         "entry_points": [relative_entry_path],
         "external": externals,
-        "minify": args.minify,
-        "format": args.format,
+        "minify": args.get("minify") or True,
+        "format": args.get("format") or "cjs",
         "target": target,
     }
 
@@ -194,7 +193,7 @@ def build_nodejs(args: BuildNodejsArgs) -> FileArchive:
             )
         pulumi.warn("node_modules not found, installing dependencies using npm ci")
 
-    if args.format == "esm":
+    if args.get("format") == "esm":
         options["out_extensions"] = [".js=.mjs"]
 
     builder = LambdaBuilder("nodejs", "npm-esbuild", None)
@@ -208,8 +207,8 @@ def build_nodejs(args: BuildNodejsArgs) -> FileArchive:
             dependencies_dir=node_modules_path,
             # TODO: I think this is what we want, but do we let the user config?
             build_in_source=True,
-            runtime=args.runtime,
-            architecture=args.architecture or Architecture.X86_64.value,
+            runtime=args.get("runtime"),
+            architecture=args.get("architecture") or Architecture.X86_64.value,
             options=options,
         )
     except LambdaBuilderError as err:

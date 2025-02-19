@@ -1,8 +1,7 @@
-from dataclasses import dataclass
 import pulumi
 from enum import Enum
 import os
-from typing import List, Optional
+from typing import List, Optional, TypedDict
 import tempfile
 from aws_lambda_builders.builder import LambdaBuilder
 from pulumi.asset import FileArchive
@@ -12,8 +11,6 @@ from aws_lambda_builders.exceptions import (
     LambdaBuilderError,
 )
 
-from aws_lambda_builders.workflows.python_pip.utils import OSUtils
-
 from pulumi_lambda_builders.utils import find_up
 
 
@@ -22,8 +19,7 @@ class Architecture(Enum):
     X86_64 = "x86_64"
 
 
-@dataclass
-class BuildPythonArgs:
+class BuildPythonArgs(TypedDict):
     code: str
     """The path to the code to build"""
 
@@ -32,10 +28,11 @@ class BuildPythonArgs:
     'python3.9', 'python3.10', 'python3.11', or 'python3.12'
     """
 
-    architecture: Optional[str] = "x86_64"
+    architecture: Optional[str]
     """The Lambda architecture to build for"""
 
-    requirements_path: Optional[str] = None
+    requirements_path: Optional[str]
+    """Path to the requirements.txt file to inspect for a list of dependencies"""
     """Path to the requirements.txt file to inspect for a list of dependencies"""
 
 
@@ -52,6 +49,11 @@ class BuildPython(pulumi.ComponentResource):
         super().__init__("lambda-builders:index:BuildPython", name, {}, opts)
         result = build_python(args)
         self.asset = result
+        self.register_outputs(
+            {
+                "asset": self.asset,
+            }
+        )
 
 
 def validate_args(args: BuildPythonArgs):
@@ -59,7 +61,7 @@ def validate_args(args: BuildPythonArgs):
     python_runtimes = [
         runtime for runtime in SUPPORTED_RUNTIMES if runtime.startswith("python")
     ]
-    if args.runtime not in python_runtimes:
+    if args.get("runtime") not in python_runtimes:
         errors.append(
             {
                 "property_path": "runtime",
@@ -67,7 +69,7 @@ def validate_args(args: BuildPythonArgs):
             }
         )
 
-    if args.architecture not in [
+    if args.get("architecture") not in [
         Architecture.ARM_64.value,
         Architecture.X86_64.value,
     ]:
@@ -78,12 +80,13 @@ def validate_args(args: BuildPythonArgs):
             }
         )
 
-    if args.requirements_path != None:
-        if not os.path.isfile(args.requirements_path):
+    requirements_path = args.get("requirements_path")
+    if requirements_path is not None:
+        if not os.path.isfile(requirements_path):
             errors.append(
                 {
                     "property_path": "requirements_path",
-                    "reason": f"requirements.txt not found at path provided: {args.requirements_path}",
+                    "reason": f"requirements.txt not found at path provided: {args.get('requirements_path')}",
                 }
             )
 
@@ -96,14 +99,16 @@ def validate_args(args: BuildPythonArgs):
 def build_python(args: BuildPythonArgs) -> FileArchive:
     builder = LambdaBuilder("python", "pip", None)
     tmp_dir = tempfile.mkdtemp()
-    arch = args.architecture or Architecture.X86_64.value
-    code = os.path.abspath(args.code)
+    arch = args.get("architecture") or Architecture.X86_64.value
+    code = os.path.abspath(args.get("code"))
+
+    args["architecture"] = arch
 
     validate_args(args)
 
     req = os.path.join(code, "requirements.txt")
-    if args.requirements_path != None:
-        req = args.requirements_path
+    if args.get("requirements_path") is not None:
+        req = args.get("requirements_path")
 
     req = find_up("requirements.txt", code)
     if not req:
@@ -121,7 +126,7 @@ def build_python(args: BuildPythonArgs) -> FileArchive:
             artifacts_dir=tmp_dir,
             scratch_dir=tempfile.mkdtemp(prefix="lambda_"),
             manifest_path=req,
-            runtime=args.runtime,
+            runtime=args.get("runtime"),
             architecture=arch,
         )
     except LambdaBuilderError as err:

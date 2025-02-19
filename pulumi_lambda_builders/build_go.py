@@ -1,8 +1,6 @@
-from dataclasses import dataclass
 import pulumi
 from enum import Enum
-import os
-from typing import Optional
+from typing import Optional, TypedDict
 import tempfile
 from aws_lambda_builders.builder import LambdaBuilder
 from pulumi.asset import FileArchive
@@ -17,15 +15,12 @@ class Architecture(Enum):
     X86_64 = "x86_64"
 
 
-@dataclass
-class BuildGoArgs:
+class BuildGoArgs(TypedDict):
     code: str
     """The path to the code to build"""
 
-    architecture: Optional[str] = "x86_64"
-    """The Lambda architecture to build for
-    :default: x86_64
-    """
+    architecture: Optional[str]
+    """The Lambda architecture to build for"""
 
 
 class BuildGo(pulumi.ComponentResource):
@@ -41,16 +36,21 @@ class BuildGo(pulumi.ComponentResource):
         super().__init__("lambda-builders:index:BuildGo", name, {}, opts)
         result = build_go(args)
         self.asset = result
+        self.register_outputs(
+            {
+                "asset": self.asset,
+            }
+        )
 
 
 def build_go(args: BuildGoArgs) -> FileArchive:
     builder = LambdaBuilder("go", "modules", None)
     tmp_dir = tempfile.mkdtemp()
-    arch = args.architecture or "x86_64"
+    arch = args.get("architecture") or "x86_64"
 
     try:
         builder.build(
-            source_dir=args.code,
+            source_dir=args.get("code"),
             artifacts_dir=tmp_dir,
             scratch_dir=tempfile.gettempdir(),
             manifest_path=None,

@@ -1,8 +1,7 @@
-from dataclasses import dataclass
 import pulumi
-from enum import Enum
 import os
-from typing import Optional
+from enum import Enum
+from typing import Optional, TypedDict
 import tempfile
 from aws_lambda_builders.builder import LambdaBuilder
 from pulumi.asset import FileArchive
@@ -16,8 +15,7 @@ class Architecture(Enum):
     X86_64 = "x86_64"
 
 
-@dataclass
-class BuildJavaArgs:
+class BuildJavaArgs(TypedDict):
     code: str
     """The path to the code to build
     """
@@ -25,7 +23,7 @@ class BuildJavaArgs:
     runtime: str
     """Java version to build dependencies for."""
 
-    architecture: Optional[str] = "x86_64"
+    architecture: Optional[str]
     """The Lambda architecture to build for
     :default: x86_64
     """
@@ -44,24 +42,29 @@ class BuildJava(pulumi.ComponentResource):
         super().__init__("lambda-builders:index:BuildJava", name, {}, opts)
         result = build_java(args)
         self.asset = result
+        self.register_outputs(
+            {
+                "asset": self.asset,
+            }
+        )
 
 
 def build_java(args: BuildJavaArgs) -> FileArchive:
     tmp_dir = tempfile.mkdtemp()
-    arch = args.architecture or "x86_64"
+    arch = args.get("architecture") or "x86_64"
 
     # TODO: add extra validation
 
     manifest_path = None
     dependency_manager = None
-    if os.path.isfile(os.path.join(args.code, "build.gradle")):
-        manifest_path = os.path.join(args.code, "build.gradle")
+    if os.path.isfile(os.path.join(args.get("code"), "build.gradle")):
+        manifest_path = os.path.join(args.get("code"), "build.gradle")
         dependency_manager = "gradle"
-    elif os.path.isfile(os.path.join(args.code, "build.gradle.kts")):
-        manifest_path = os.path.join(args.code, "build.gradle.kts")
+    elif os.path.isfile(os.path.join(args.get("code"), "build.gradle.kts")):
+        manifest_path = os.path.join(args.get("code"), "build.gradle.kts")
         dependency_manager = "gradle"
-    elif os.path.isfile(os.path.join(args.code, "pom.xml")):
-        manifest_path = os.path.join(args.code, "pom.xml")
+    elif os.path.isfile(os.path.join(args.get("code"), "pom.xml")):
+        manifest_path = os.path.join(args.get("code"), "pom.xml")
         dependency_manager = "maven"
 
     if not manifest_path:
@@ -72,11 +75,11 @@ def build_java(args: BuildJavaArgs) -> FileArchive:
     builder = LambdaBuilder("java", dependency_manager, None)
     try:
         builder.build(
-            source_dir=args.code,
+            source_dir=args.get("code"),
             artifacts_dir=tmp_dir,
             scratch_dir=tempfile.gettempdir(),
             manifest_path=manifest_path,
-            runtime=args.runtime,
+            runtime=args.get("runtime"),
             architecture=arch,
         )
     except LambdaBuilderError as err:
