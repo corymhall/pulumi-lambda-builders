@@ -6,6 +6,10 @@
       "type": "devenv"
     },
     {
+      "name": "pyfakefs",
+      "type": "devenv"
+    },
+    {
       "name": "aws_lambda_builders",
       "type": "runtime"
     },
