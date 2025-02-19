@@ -1,6 +1,10 @@
 {
   "dependencies": [
     {
+      "name": "numpy",
+      "type": "devenv"
+    },
+    {
       "name": "projen",
       "version": "0.91.8",
       "type": "devenv"

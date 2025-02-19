@@ -7,7 +7,7 @@ project = PythonProject(
     name="pulumi-lambda-builders",
     version="0.1.0",
     deps=["pulumi>=3.149,<4.0", "aws_lambda_builders"],
-    dev_deps=["pyfakefs"],
+    dev_deps=["pyfakefs", "numpy"],
     venv_options=VenvOptions(envdir="venv"),
 )
 
