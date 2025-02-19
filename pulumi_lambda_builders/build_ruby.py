@@ -42,7 +42,7 @@ class BuildRuby(pulumi.ComponentResource):
         args: BuildRubyArgs,
         opts: Optional[pulumi.ResourceOptions] = None,
     ) -> None:
-        super().__init__("pulumi-lambda-builders:index:BuildRuby", name, {}, opts)
+        super().__init__("lambda-builders:index:BuildRuby", name, {}, opts)
         result = build_ruby(args)
         self.asset = result
 

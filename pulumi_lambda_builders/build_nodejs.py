@@ -88,7 +88,7 @@ class BuildNodejs(pulumi.ComponentResource):
         args: BuildNodejsArgs,
         opts: Optional[pulumi.ResourceOptions] = None,
     ) -> None:
-        super().__init__("pulumi-lambda-builders:index:BuildNodejs", name, {}, opts)
+        super().__init__("lambda-builders:index:BuildNodejs", name, {}, opts)
 
         result = build_nodejs(args)
         self.asset = result

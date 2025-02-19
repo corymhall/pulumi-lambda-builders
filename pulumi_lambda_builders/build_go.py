@@ -38,7 +38,7 @@ class BuildGo(pulumi.ComponentResource):
         args: BuildGoArgs,
         opts: Optional[pulumi.ResourceOptions] = None,
     ) -> None:
-        super().__init__("pulumi-lambda-builders:index:BuildGo", name, {}, opts)
+        super().__init__("lambda-builders:index:BuildGo", name, {}, opts)
         result = build_go(args)
         self.asset = result
 

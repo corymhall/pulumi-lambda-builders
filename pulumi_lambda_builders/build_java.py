@@ -41,7 +41,7 @@ class BuildJava(pulumi.ComponentResource):
         args: BuildJavaArgs,
         opts: Optional[pulumi.ResourceOptions] = None,
     ) -> None:
-        super().__init__("pulumi-lambda-builders:index:BuildJava", name, {}, opts)
+        super().__init__("lambda-builders:index:BuildJava", name, {}, opts)
         result = build_java(args)
         self.asset = result
 

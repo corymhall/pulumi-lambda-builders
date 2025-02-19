@@ -47,7 +47,7 @@ class BuildDotnet(pulumi.ComponentResource):
         args: BuildDotnetArgs,
         opts: Optional[pulumi.ResourceOptions] = None,
     ) -> None:
-        super().__init__("pulumi-lambda-builders:index:BuildDotnet", name, {}, opts)
+        super().__init__("lambda-builders:index:BuildDotnet", name, {}, opts)
         result = build_dotnet(args)
         self.asset = result
 

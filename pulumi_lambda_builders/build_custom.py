@@ -45,7 +45,7 @@ class BuildCustomMake(pulumi.ComponentResource):
         args: BuildCustomMakeArgs,
         opts: Optional[pulumi.ResourceOptions] = None,
     ) -> None:
-        super().__init__("pulumi-lambda-builders:index:BuildCustomMake", name, {}, opts)
+        super().__init__("lambda-builders:index:BuildCustomMake", name, {}, opts)
         result = build_go(args)
         self.asset = result
 

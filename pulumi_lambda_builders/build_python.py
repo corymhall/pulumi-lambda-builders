@@ -49,7 +49,7 @@ class BuildPython(pulumi.ComponentResource):
         args: BuildPythonArgs,
         opts: Optional[pulumi.ResourceOptions] = None,
     ) -> None:
-        super().__init__("pulumi-lambda-builders:index:BuildPython", name, {}, opts)
+        super().__init__("lambda-builders:index:BuildPython", name, {}, opts)
         result = build_python(args)
         self.asset = result
 

@@ -48,7 +48,7 @@ class BuildRust(pulumi.ComponentResource):
         args: BuildRustArgs,
         opts: Optional[pulumi.ResourceOptions] = None,
     ) -> None:
-        super().__init__("pulumi-lambda-builders:index:BuildRust", name, {}, opts)
+        super().__init__("lambda-builders:index:BuildRust", name, {}, opts)
         result = build_rust(args)
         self.asset = result
 
