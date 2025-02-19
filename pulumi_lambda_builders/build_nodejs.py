@@ -127,7 +127,7 @@ def validate_args(args: BuildNodejsArgs):
         errors.append(
             {
                 "property_path": "entry",
-                "reason": f"Cannot find entry file at {args.get("entry")}",
+                "reason": f"Cannot find entry file at {args.get('entry')}",
             }
         )
 
