@@ -1,3 +1,4 @@
+from typing import Optional
 import pytest
 from unittest.mock import patch, ANY
 
@@ -10,12 +11,32 @@ from tests.utils import assert_input_properties_error
 TEST_DATA_FOLDER = os.path.join(os.path.dirname(__file__), "testdata/simple-nodejs")
 
 
+def get_build_args(
+    entry: str,
+    runtime: str,
+    lock_path: Optional[str] = None,
+    arch: Optional[str] = None,
+) -> BuildNodejsArgs:
+    return BuildNodejsArgs(
+        architecture=arch,
+        bundle_aws_sdk=True,
+        entry=entry,
+        external=[],
+        format="",
+        minify=True,
+        node_modules_path="",
+        package_json_path=lock_path,
+        runtime=runtime,
+        target="",
+    )
+
+
 def test_esbuild():
     res = build_nodejs(
-        args=BuildNodejsArgs(
+        get_build_args(
             entry=os.path.join(TEST_DATA_FOLDER, "app/index.ts"),
             runtime="nodejs18.x",
-            package_json_path=os.path.join(TEST_DATA_FOLDER, "package-lock.json"),
+            lock_path=os.path.join(TEST_DATA_FOLDER, "package-lock.json"),
         )
     )
 
@@ -62,7 +83,7 @@ class TestBuildNodejsErrors(TestCase):
         fake_fs.create_file("/fake_dir/project/package-lock.json", contents="{}")
 
     def test_invalid_runtime(self):
-        args = BuildNodejsArgs(
+        args = get_build_args(
             entry="app/index.ts",
             runtime="nodejs14.x",  # Invalid runtime
         )
@@ -71,10 +92,10 @@ class TestBuildNodejsErrors(TestCase):
         assert_input_properties_error(exc_info, "runtime", "Runtime must be one of")
 
     def test_invalid_architecture(self):
-        args = BuildNodejsArgs(
+        args = get_build_args(
             entry="app/index.ts",
             runtime="nodejs18.x",
-            architecture="invalid-arch",  # Invalid architecture
+            arch="invalid-arch",  # Invalid architecture
         )
         with pytest.raises(pulumi.InputPropertiesError) as exc_info:
             build_nodejs(args)
@@ -83,7 +104,7 @@ class TestBuildNodejsErrors(TestCase):
         )
 
     def test_nonexistent_entry_file(self):
-        args = BuildNodejsArgs(
+        args = get_build_args(
             entry="app/nonexistent.ts",  # Nonexistent file
             runtime="nodejs18.x",
         )
@@ -99,7 +120,7 @@ class TestBuildNodejsErrorsCustom(TestCase):
         self.setUpPyfakefs()
 
     def test_invalid_entry_file_type(self):
-        args = BuildNodejsArgs(
+        args = get_build_args(
             entry="app/index.txt",  # Invalid file type
             runtime="nodejs18.x",
         )
@@ -116,7 +137,7 @@ class TestBuildNodejsErrorsCustom(TestCase):
         self.fs.create_file("/fake_dir/project/package-lock.json", contents="{}")
         self.fs.cwd = "/fake_dir"
 
-        args = BuildNodejsArgs(
+        args = get_build_args(
             entry="project/app/index.ts",
             runtime="nodejs18.x",
         )
@@ -125,7 +146,7 @@ class TestBuildNodejsErrorsCustom(TestCase):
         assert_input_properties_error(
             exc_info,
             "lock_file_path",
-            "Cannot find package-lock.json file. Please provide the path to the file",
+            "Cannot find package.json file. Please provide the path to the file",
         )
 
 
@@ -136,13 +157,14 @@ class TestBuildNodejs(TestCase):
     def test_build_nodejs_calls_builder_with_correct_args(self):
         # Setup the fake filesystem
         self.fs.create_file("/fake_dir/project/package-lock.json")
+        self.fs.create_file("/fake_dir/project/package.json")
         self.fs.create_file("/fake_dir/project/app/index.ts", contents="test")
         # Mock the current working directory
         self.fs.cwd = "/fake_dir/project"
         assert os.path.abspath("app/index.ts") == "/fake_dir/project/app/index.ts"
         assert os.path.exists(os.path.abspath("app/index.ts"))
         assert os.getcwd() == "/fake_dir/project"
-        args = BuildNodejsArgs(
+        args = get_build_args(
             entry="app/index.ts",
             runtime="nodejs18.x",
         )
@@ -154,7 +176,7 @@ class TestBuildNodejs(TestCase):
                 **build_nodejs_call_args(
                     source_dir="/fake_dir/project",
                     runtime="nodejs18.x",
-                    manifest_path="/fake_dir/project/package-lock.json",
+                    manifest_path="/fake_dir/project/package.json",
                     download_dependencies=True,
                     dependencies_dir="/fake_dir/project/node_modules",
                     build_in_source=True,
@@ -165,15 +187,18 @@ class TestBuildNodejs(TestCase):
                         "minify": True,
                         "format": "cjs",
                         "target": "node18",
+                        "use_npm_ci": True,
                     },
                 )
             )
 
     def test_build_nodejs_find_lockfile(self):
         self.fs.create_file("/fake_dir/project/package-lock.json")
+        self.fs.create_file("/fake_dir/project/package.json")
+        self.fs.create_file("/fake_dir/project/node_modules")
         self.fs.create_file("/fake_dir/project/app/index.ts", contents="test")
         self.fs.cwd = "/fake_dir/project/app"
-        args = BuildNodejsArgs(
+        args = get_build_args(
             entry="index.ts",
             runtime="nodejs18.x",
         )
@@ -183,7 +208,8 @@ class TestBuildNodejs(TestCase):
             mock_build.assert_called_once()
             mock_build.assert_called_with(
                 **build_nodejs_call_args(
-                    manifest_path="/fake_dir/project/package-lock.json",
+                    manifest_path="/fake_dir/project/package.json",
+                    download_dependencies=False,
                     options={
                         "entry_points": ["app/index.ts"],
                         "external": ["@aws-sdk/*", "@smithy/*"],
@@ -196,10 +222,12 @@ class TestBuildNodejs(TestCase):
 
     def test_build_nodejs_find_first_lockfile(self):
         self.fs.create_file("/fake_dir/project/package-lock.json")
+        self.fs.create_file("/fake_dir/project/package.json")
         self.fs.create_file("/fake_dir/project/app/package-lock.json")
+        self.fs.create_file("/fake_dir/project/app/package.json")
         self.fs.create_file("/fake_dir/project/app/index.ts", contents="test")
         self.fs.cwd = "/fake_dir/project/app"
-        args = BuildNodejsArgs(
+        args = get_build_args(
             entry="index.ts",
             runtime="nodejs18.x",
         )
@@ -209,13 +237,14 @@ class TestBuildNodejs(TestCase):
             mock_build.assert_called_once()
             mock_build.assert_called_with(
                 **build_nodejs_call_args(
-                    manifest_path="/fake_dir/project/app/package-lock.json",
+                    manifest_path="/fake_dir/project/app/package.json",
                     options={
                         "entry_points": ["index.ts"],
                         "external": ["@aws-sdk/*", "@smithy/*"],
                         "minify": True,
                         "format": "cjs",
                         "target": "node18",
+                        "use_npm_ci": True,
                     },
                 )
             )

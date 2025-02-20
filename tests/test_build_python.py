@@ -1,3 +1,4 @@
+from typing import Optional
 from unittest.mock import ANY, patch
 import pulumi
 from pyfakefs.fake_filesystem_unittest import TestCase
@@ -9,6 +10,17 @@ from tests.utils import assert_input_properties_error
 
 
 TEST_DATA_FOLDER = os.path.join(os.path.dirname(__file__), "testdata/simple-python")
+
+
+def get_build_args(
+    code: str, runtime: str, lock_path: Optional[str] = None, arch: Optional[str] = None
+) -> BuildPythonArgs:
+    return BuildPythonArgs(
+        architecture=arch,
+        code=code,
+        requirements_path=lock_path,
+        runtime=runtime,
+    )
 
 
 def build_python_call_args(
@@ -29,9 +41,7 @@ def build_python_call_args(
 
 def test_success():
     res = build_python(
-        args=BuildPythonArgs(
-            code=TEST_DATA_FOLDER, runtime="python3.11", architecture="x86_64"
-        )
+        args=get_build_args(code=TEST_DATA_FOLDER, runtime="python3.11", arch="x86_64")
     )
 
     files = os.listdir(res.path)
@@ -51,7 +61,7 @@ class TestBuildPythonErrors(TestCase):
         fake_fs.create_file("/fake_dir/project/requirements.txt", contents="{}")
 
     def test_invalid_runtime(self):
-        args = BuildPythonArgs(
+        args = get_build_args(
             code="/fake_dir/project/app",
             runtime="python3.99",  # Invalid runtime
         )
@@ -60,10 +70,10 @@ class TestBuildPythonErrors(TestCase):
         assert_input_properties_error(exc_info, "runtime", "Runtime must be one of")
 
     def test_invalid_architecture(self):
-        args = BuildPythonArgs(
+        args = get_build_args(
             code="/fake_dir/project/app",
             runtime="python3.8",
-            architecture="invalid-arch",  # Invalid architecture
+            arch="invalid-arch",  # Invalid architecture
         )
         with pytest.raises(pulumi.InputPropertiesError) as exc_info:
             build_python(args)
@@ -83,7 +93,7 @@ class TestBuildPython(TestCase):
         # Mock the current working directory
         self.fs.cwd = "/fake_dir/project"
         assert os.getcwd() == "/fake_dir/project"
-        args = BuildPythonArgs(
+        args = get_build_args(
             code="app",
             runtime="python3.8",
         )
@@ -104,7 +114,7 @@ class TestBuildPython(TestCase):
         self.fs.create_file("/fake_dir/project/requirements.txt")
         self.fs.create_file("/fake_dir/project/app/main.py", contents="test")
         self.fs.cwd = "/fake_dir/project/app"
-        args = BuildPythonArgs(
+        args = get_build_args(
             code="./",
             runtime="python3.8",
         )
@@ -123,7 +133,7 @@ class TestBuildPython(TestCase):
         self.fs.create_file("/fake_dir/project/app/requirements.txt")
         self.fs.create_file("/fake_dir/project/app/main.py", contents="test")
         self.fs.cwd = "/fake_dir/project/app"
-        args = BuildPythonArgs(
+        args = get_build_args(
             code="./",
             runtime="python3.8",
         )

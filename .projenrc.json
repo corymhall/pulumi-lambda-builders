@@ -1,0 +1,17 @@
+{
+  "type": "projen.python.PythonProject",
+  "authorEmail": "43035978+corymhall@users.noreply.github.com",
+  "authorName": "corymhall",
+  "moduleName": "pulumi_lambda_builders",
+  "name": "pulumi-lambda-builders",
+  "projenrcJson": true,
+  "version": "0.1.0",
+  "deps": ["aws_lambda_builders", "pulumi>=3.149,<4.0"],
+  "devDeps": ["pytest"],
+  "venvOptions": {
+    "envdir": "venv"
+  },
+  "gitIgnoreOptions": {
+    "ignorePatterns": ["node_modules"]
+  }
+}

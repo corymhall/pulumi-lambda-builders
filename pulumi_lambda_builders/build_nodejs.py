@@ -2,7 +2,7 @@ import pulumi
 from enum import Enum
 import os
 import re
-from typing import Optional, List, TypedDict
+from typing import Optional, Optional, List, TypedDict
 import tempfile
 from aws_lambda_builders.builder import LambdaBuilder
 from aws_lambda_builders.validator import SUPPORTED_RUNTIMES
@@ -105,16 +105,18 @@ def validate_args(args: BuildNodejsArgs):
             }
         )
 
-    if args.get("architecture") not in [
-        Architecture.ARM_64.value,
-        Architecture.X86_64.value,
-    ]:
-        errors.append(
-            {
-                "property_path": "architecture",
-                "reason": f"Architecture must be one of {Architecture.ARM_64.value}, {Architecture.X86_64.value}",
-            }
-        )
+    arch = args.get("architecture")
+    if arch is not None:
+        if arch not in [
+            Architecture.ARM_64.value,
+            Architecture.X86_64.value,
+        ]:
+            errors.append(
+                {
+                    "property_path": "architecture",
+                    "reason": f"Architecture must be one of {Architecture.ARM_64.value}, {Architecture.X86_64.value}",
+                }
+            )
 
     if not re.search(r"\.(js|ts)$", args.get("entry")):
         errors.append(
