@@ -2,11 +2,16 @@
 
 * text=auto eol=lf
 /.gitattributes linguist-generated
+/.github/workflows/build.yml linguist-generated
+/.github/workflows/github-release.yml linguist-generated
 /.github/workflows/pull-request-lint.yml linguist-generated
+/.github/workflows/release.yml linguist-generated
 /.gitignore linguist-generated
 /.projen/** linguist-generated
 /.projen/deps.json linguist-generated
 /.projen/files.json linguist-generated
 /.projen/tasks.json linguist-generated
+/.version.json linguist-generated
+/PulumiPlugin.yaml linguist-generated
 /requirements-dev.txt linguist-generated
 /requirements.txt linguist-generated

@@ -1,12 +1,16 @@
 {
   "dependencies": [
     {
+      "name": "hallcor.pulumi-projen-project-types",
+      "type": "devenv"
+    },
+    {
       "name": "numpy",
       "type": "devenv"
     },
     {
       "name": "projen",
-      "version": "0.91.8",
+      "version": ">=0.91",
       "type": "devenv"
     },
     {
@@ -18,7 +22,15 @@
       "type": "runtime"
     },
     {
+      "name": "pulumi",
+      "type": "runtime"
+    },
+    {
       "name": "pulumi>=3.149,<4.0",
+      "type": "runtime"
+    },
+    {
+      "name": "toml",
       "type": "runtime"
     },
     {

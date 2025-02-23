@@ -83,5 +83,13 @@ dmypy.json
 .pyre/
 .pytype/
 cython_debug/
+!/PulumiPlugin.yaml
+!/.github/workflows/build.yml
+!/.version.json
+/dist/changelog.md
+/dist/version.txt
+!/.github/workflows/release.yml
+dist
+!/.github/workflows/github-release.yml
 node_modules
 !/.projenrc.py

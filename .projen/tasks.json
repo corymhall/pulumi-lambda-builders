@@ -24,6 +24,27 @@
         }
       ]
     },
+    "bump": {
+      "name": "bump",
+      "description": "Bumps version based on latest git tag and generates a changelog entry",
+      "env": {
+        "OUTFILE": ".version.json",
+        "CHANGELOG": "dist/changelog.md",
+        "BUMPFILE": "dist/version.txt",
+        "RELEASETAG": "dist/releasetag.txt",
+        "RELEASE_TAG_PREFIX": "",
+        "BUMP_PACKAGE": "commit-and-tag-version@^12"
+      },
+      "steps": [
+        {
+          "exec": "mkdir -p dist && cp .version.json dist/"
+        },
+        {
+          "builtin": "release/bump-version"
+        }
+      ],
+      "condition": "git log --oneline -1 | grep -qv \"chore(release):\""
+    },
     "clobber": {
       "name": "clobber",
       "description": "hard resets to HEAD of origin and cleans the local repo",
@@ -69,6 +90,20 @@
         }
       ]
     },
+    "dist": {
+      "name": "dist",
+      "steps": [
+        {
+          "exec": "mkdir -p dist"
+        },
+        {
+          "exec": "cp .version.json dist/"
+        },
+        {
+          "exec": "git checkout .version.json"
+        }
+      ]
+    },
     "eject": {
       "name": "eject",
       "description": "Remove projen from the project",
@@ -98,7 +133,12 @@
     },
     "package": {
       "name": "package",
-      "description": "Creates the distribution package"
+      "description": "Creates the distribution package",
+      "steps": [
+        {
+          "spawn": "dist"
+        }
+      ]
     },
     "post-compile": {
       "name": "post-compile",
@@ -108,12 +148,78 @@
       "name": "pre-compile",
       "description": "Prepare the project for compilation"
     },
+    "publish:git": {
+      "name": "publish:git",
+      "description": "Prepends the release changelog onto the project changelog, creates a release commit, and tags the release",
+      "env": {
+        "CHANGELOG": "dist/changelog.md",
+        "RELEASE_TAG_FILE": "dist/releasetag.txt",
+        "PROJECT_CHANGELOG_FILE": "",
+        "VERSION_FILE": "dist/version.txt"
+      },
+      "steps": [
+        {
+          "exec": "cp dist/.version.json . && git add .version.json"
+        },
+        {
+          "builtin": "release/tag-version"
+        },
+        {
+          "exec": "git push --follow-tags origin main"
+        }
+      ],
+      "condition": "git log --oneline -1 | grep -qv \"chore(release):\""
+    },
+    "release": {
+      "name": "release",
+      "description": "Prepare a release from \"main\" branch",
+      "env": {
+        "RELEASE": "true"
+      },
+      "steps": [
+        {
+          "exec": "rm -fr dist"
+        },
+        {
+          "spawn": "bump"
+        },
+        {
+          "spawn": "package"
+        },
+        {
+          "spawn": "unbump"
+        },
+        {
+          "exec": "git diff --ignore-space-at-eol --exit-code"
+        },
+        {
+          "spawn": "publish:git"
+        }
+      ]
+    },
     "test": {
       "name": "test",
       "description": "Run tests",
       "steps": [
         {
           "exec": "pytest"
+        }
+      ]
+    },
+    "unbump": {
+      "name": "unbump",
+      "description": "Restores version to 0.0.0",
+      "env": {
+        "OUTFILE": ".version.json",
+        "CHANGELOG": "dist/changelog.md",
+        "BUMPFILE": "dist/version.txt",
+        "RELEASETAG": "dist/releasetag.txt",
+        "RELEASE_TAG_PREFIX": "",
+        "BUMP_PACKAGE": "commit-and-tag-version@^12"
+      },
+      "steps": [
+        {
+          "builtin": "release/reset-version"
         }
       ]
     }
