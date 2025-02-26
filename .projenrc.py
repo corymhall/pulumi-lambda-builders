@@ -1,8 +1,22 @@
+from projen import RenovatebotOptions, RenovatebotScheduleInterval
+from projen.github import AutoApproveOptions, GitHubOptions
 from projen.python import ProjenrcOptions
 from hallcor.pulumi_projen_project_types import PythonComponent
 
 project = PythonComponent(
     author_email="43035978+corymhall@users.noreply.github.com",
+    github_options=GitHubOptions(
+        mergify=True,
+    ),
+    renovatebot=True,
+    renovatebot_options=RenovatebotOptions(
+        schedule_interval=["before 3am on Monday"],
+        labels=["auto-approve"],
+    ),
+    auto_approve_options=AutoApproveOptions(
+        allowed_usernames=["corymhall", "renovate[bot]"],
+        label="auto-approve",
+    ),
     author_name="corymhall",
     module_name="pulumi_lambda_builders",
     component_name="lambda-builders",
