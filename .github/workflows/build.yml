@@ -21,6 +21,8 @@ jobs:
           repository: ${{ github.event.pull_request.head.repo.full_name }}
       - name: Setup Python
         uses: actions/setup-python@v5
+      - run: python -m venv venv
+      - run: npx projen@0.91.13 install
       - name: build
         run: npx projen@0.91.13 build
       - name: Find mutations
