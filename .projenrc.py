@@ -9,9 +9,7 @@ project = PythonComponent(
     name="pulumi-lambda-builders",
     version="0.1.0",
     deps=[
-        "pulumi>=3.149,<4.0",
         "aws_lambda_builders",
-        "toml",
     ],
     projenrc_python_options=ProjenrcOptions(projen_version=">=0.91"),
     dev_deps=[

@@ -23,14 +23,7 @@
     },
     {
       "name": "pulumi",
-      "type": "runtime"
-    },
-    {
-      "name": "pulumi>=3.149,<4.0",
-      "type": "runtime"
-    },
-    {
-      "name": "toml",
+      "version": ">=3.150 <4.0",
       "type": "runtime"
     },
     {
