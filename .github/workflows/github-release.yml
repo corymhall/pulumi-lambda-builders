@@ -9,6 +9,7 @@ on:
 jobs:
   publish-to-github-release:
     name: Publish to GitHub Release
+    runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
