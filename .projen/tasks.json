@@ -202,6 +202,11 @@
       "description": "Run tests",
       "steps": [
         {
+          "exec": "npm ci",
+          "condition": "if [ -d 'node_modules' ]; then exit 0; else exit 1; fi",
+          "cwd": "tests/testdata/simple-nodejs"
+        },
+        {
           "exec": "pytest"
         }
       ]

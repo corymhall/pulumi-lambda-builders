@@ -187,9 +187,7 @@ def build_nodejs(args: BuildNodejsArgs) -> FileArchive:
 
     if download_dependencies == True:
         found = find_up("package-lock.json", os.getcwd())
-        if found is not None:
-            options["use_npm_ci"] = True
-        else:
+        if found is None:
             pulumi.warn(
                 "node_modules not found and package-lock.json not found, installing dependencies using npm install --production"
             )
