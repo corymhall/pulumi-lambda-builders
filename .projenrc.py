@@ -36,7 +36,7 @@ project = PythonComponent(
 project.test_task.prepend_exec(
     "npm ci",
     cwd="tests/testdata/simple-nodejs",
-    condition="if [ -d 'node_modules' ]; then exit 0; else exit 1; fi",
+    condition="if [ -d 'node_modules' ]; then exit 1; else exit 0; fi",
 )
 
 project.add_git_ignore("node_modules")
