@@ -7,7 +7,7 @@
   "projenrcJson": true,
   "version": "0.1.0",
   "deps": ["aws_lambda_builders", "pulumi>=3.149,<4.0"],
-  "devDeps": ["pytest"],
+  "devDeps": ["pytest", "pyfakefs"],
   "venvOptions": {
     "envdir": "venv"
   },

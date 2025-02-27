@@ -3,8 +3,10 @@ node_modules/
 !/.gitattributes
 !/.projen/tasks.json
 !/.projen/deps.json
+!/renovate.json5
 !/.projen/files.json
 !/.github/workflows/pull-request-lint.yml
+!/.github/workflows/auto-approve.yml
 /venv
 !/requirements.txt
 !/requirements-dev.txt
@@ -83,5 +85,13 @@ dmypy.json
 .pyre/
 .pytype/
 cython_debug/
+!/PulumiPlugin.yaml
+!/.github/workflows/build.yml
+!/.version.json
+/dist/changelog.md
+/dist/version.txt
+!/.github/workflows/release.yml
+dist
+!/.github/workflows/github-release.yml
 node_modules
 !/.projenrc.py

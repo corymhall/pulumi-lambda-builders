@@ -187,7 +187,6 @@ class TestBuildNodejs(TestCase):
                         "minify": True,
                         "format": "cjs",
                         "target": "node18",
-                        "use_npm_ci": True,
                     },
                 )
             )
@@ -244,7 +243,6 @@ class TestBuildNodejs(TestCase):
                         "minify": True,
                         "format": "cjs",
                         "target": "node18",
-                        "use_npm_ci": True,
                     },
                 )
             )
