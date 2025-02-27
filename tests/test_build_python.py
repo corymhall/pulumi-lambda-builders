@@ -41,7 +41,7 @@ def build_python_call_args(
 
 def test_success():
     res = build_python(
-        args=get_build_args(code=TEST_DATA_FOLDER, runtime="python3.14", arch="x86_64")
+        args=get_build_args(code=TEST_DATA_FOLDER, runtime="python3.12", arch="x86_64")
     )
 
     files = os.listdir(res.path)
