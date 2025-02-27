@@ -7,6 +7,7 @@
     },
     "devDependencies": {
         "@aws-sdk/client-dynamodb": "3.632.0",
-        "@types/node": "^22.13.4"
+        "@types/node": "^22.13.4",
+        "esbuild": "^0.25.0"
     }
 }
