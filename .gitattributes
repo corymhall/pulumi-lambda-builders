@@ -13,8 +13,8 @@
 /.projen/deps.json linguist-generated
 /.projen/files.json linguist-generated
 /.projen/tasks.json linguist-generated
-/.version.json linguist-generated
 /PulumiPlugin.yaml linguist-generated
 /renovate.json5 linguist-generated
 /requirements-dev.txt linguist-generated
 /requirements.txt linguist-generated
+/version.json linguist-generated

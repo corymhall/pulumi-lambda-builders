@@ -28,7 +28,7 @@
       "name": "bump",
       "description": "Bumps version based on latest git tag and generates a changelog entry",
       "env": {
-        "OUTFILE": ".version.json",
+        "OUTFILE": "version.json",
         "CHANGELOG": "dist/changelog.md",
         "BUMPFILE": "dist/version.txt",
         "RELEASETAG": "dist/releasetag.txt",
@@ -37,7 +37,7 @@
       },
       "steps": [
         {
-          "exec": "mkdir -p dist && cp .version.json dist/"
+          "exec": "mkdir -p dist && cp version.json dist/"
         },
         {
           "builtin": "release/bump-version"
@@ -97,10 +97,10 @@
           "exec": "mkdir -p dist"
         },
         {
-          "exec": "cp .version.json dist/"
+          "exec": "cp version.json dist/"
         },
         {
-          "exec": "git checkout .version.json"
+          "exec": "git checkout version.json"
         }
       ]
     },
@@ -159,7 +159,7 @@
       },
       "steps": [
         {
-          "exec": "VERSION=$(cat dist/version.txt); cp dist/.version.json . && git add .version.json && git commit -m \"chore(release): v$VERSION\""
+          "exec": "VERSION=$(cat dist/version.txt); cp dist/version.json . && git add version.json && git commit -m \"chore(release): v$VERSION\""
         },
         {
           "builtin": "release/tag-version"
@@ -212,7 +212,7 @@
       "name": "unbump",
       "description": "Restores version to 0.0.0",
       "env": {
-        "OUTFILE": ".version.json",
+        "OUTFILE": "version.json",
         "CHANGELOG": "dist/changelog.md",
         "BUMPFILE": "dist/version.txt",
         "RELEASETAG": "dist/releasetag.txt",
