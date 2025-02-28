@@ -40,6 +40,11 @@ project.test_task.prepend_exec(
     condition="if [ -d 'node_modules' ]; then exit 1; else exit 0; fi",
 )
 
+unbump = project.tasks.try_find("unbump")
+if unbump is not None:
+    unbump.reset('echo "nothing to do here"')
+
+
 project.add_git_ignore("node_modules")
 
 project.synth()
