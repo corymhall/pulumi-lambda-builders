@@ -221,7 +221,7 @@
       },
       "steps": [
         {
-          "builtin": "release/reset-version"
+          "exec": "echo \"nothing to do here\""
         }
       ]
     }
