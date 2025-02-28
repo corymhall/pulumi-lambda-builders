@@ -87,6 +87,7 @@ dmypy.json
 cython_debug/
 !/PulumiPlugin.yaml
 !/.github/workflows/build.yml
+!/.mergify.yml
 !/.version.json
 /dist/changelog.md
 /dist/version.txt
