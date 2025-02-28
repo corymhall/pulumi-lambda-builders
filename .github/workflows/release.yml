@@ -74,5 +74,8 @@ jobs:
           git config user.email "github-actions@github.com"
       - name: Release
         env:
+          VERSION_FILE: dist/version.txt
+          CHANGELOG: ""
+          RELEASE_TAG_FILE: dist/releasetag.txt
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npx projen@0.91.13 publish:git

@@ -159,7 +159,7 @@
       },
       "steps": [
         {
-          "exec": "cp dist/.version.json . && git add .version.json"
+          "exec": "VERSION=$(cat dist/version.txt); cp dist/.version.json . && git add .version.json && git commit -m \"chore(release): v$VERSION\""
         },
         {
           "builtin": "release/tag-version"
