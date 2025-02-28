@@ -1,4 +1,4 @@
-from projen import RenovatebotOptions, RenovatebotScheduleInterval
+from projen import RenovatebotOptions
 from projen.github import AutoApproveOptions, GitHubOptions
 from projen.python import ProjenrcOptions
 from hallcor.pulumi_projen_project_types import PythonComponent
@@ -9,6 +9,7 @@ project = PythonComponent(
         mergify=True,
     ),
     renovatebot=True,
+    github_release_token="${{ secrets.PROJEN_GITHUB_TOKEN }}",
     renovatebot_options=RenovatebotOptions(
         schedule_interval=["before 3am on Monday"],
         labels=["auto-approve"],
