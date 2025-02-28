@@ -3,7 +3,7 @@ import os
 import json
 
 dir = os.path.dirname(os.path.abspath(__file__))
-version_file_path = os.path.join(dir, ".version.json")
+version_file_path = os.path.join(dir, "version.json")
 with open(version_file_path, "r") as f:
     pyproject = json.load(f)
 version = pyproject["version"]

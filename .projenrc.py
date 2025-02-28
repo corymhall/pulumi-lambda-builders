@@ -1,5 +1,5 @@
 from projen import RenovatebotOptions
-from projen.github import AutoApproveOptions, GitHubOptions
+from projen.github import AutoApproveOptions, GitHubOptions, GitIdentity
 from projen.python import ProjenrcOptions
 from hallcor.pulumi_projen_project_types import PythonComponent
 
@@ -10,6 +10,10 @@ project = PythonComponent(
     ),
     renovatebot=True,
     github_release_token="${{ secrets.PROJEN_GITHUB_TOKEN }}",
+    git_identity=GitIdentity(
+        email="43035978+corymhall@users.noreply.github.com",
+        name="corymhall",
+    ),
     renovatebot_options=RenovatebotOptions(
         schedule_interval=["before 3am on Monday"],
         labels=["auto-approve"],
