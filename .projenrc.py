@@ -1,13 +1,10 @@
 from projen import RenovatebotOptions
-from projen.github import AutoApproveOptions, GitHubOptions, GitIdentity
+from projen.github import AutoApproveOptions, GitIdentity
 from projen.python import ProjenrcOptions
 from hallcor.pulumi_projen_project_types import PythonComponent
 
 project = PythonComponent(
     author_email="43035978+corymhall@users.noreply.github.com",
-    github_options=GitHubOptions(
-        mergify=True,
-    ),
     renovatebot=True,
     github_release_token="${{ secrets.PROJEN_GITHUB_TOKEN }}",
     git_identity=GitIdentity(
@@ -43,11 +40,6 @@ project.test_task.prepend_exec(
     cwd="tests/testdata/simple-nodejs",
     condition="if [ -d 'node_modules' ]; then exit 1; else exit 0; fi",
 )
-
-unbump = project.tasks.try_find("unbump")
-if unbump is not None:
-    unbump.reset('echo "nothing to do here"')
-
 
 project.add_git_ignore("node_modules")
 

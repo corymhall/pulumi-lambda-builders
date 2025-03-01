@@ -221,7 +221,7 @@
       },
       "steps": [
         {
-          "exec": "echo \"nothing to do here\""
+          "exec": "echo \"nothing to do\""
         }
       ]
     }
