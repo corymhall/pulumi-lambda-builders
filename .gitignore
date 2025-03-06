@@ -3,7 +3,6 @@ node_modules/
 !/.gitattributes
 !/.projen/tasks.json
 !/.projen/deps.json
-!/renovate.json5
 !/.projen/files.json
 !/.github/workflows/pull-request-lint.yml
 !/.github/workflows/auto-approve.yml

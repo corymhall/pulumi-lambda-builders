@@ -12,7 +12,6 @@
     ".projen/files.json",
     ".projen/tasks.json",
     "PulumiPlugin.yaml",
-    "renovate.json5",
     "requirements-dev.txt",
     "requirements.txt"
   ],
