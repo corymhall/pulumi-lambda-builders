@@ -37,9 +37,6 @@
       },
       "steps": [
         {
-          "exec": "mkdir -p dist && cp version.json dist/"
-        },
-        {
           "builtin": "release/bump-version"
         }
       ],
@@ -100,7 +97,7 @@
           "exec": "cp version.json dist/"
         },
         {
-          "exec": "git checkout version.json"
+          "exec": "touch dist/releasetag.txt"
         }
       ]
     },
@@ -221,7 +218,7 @@
       },
       "steps": [
         {
-          "exec": "echo \"nothing to do\""
+          "exec": "git checkout version.json"
         }
       ]
     }

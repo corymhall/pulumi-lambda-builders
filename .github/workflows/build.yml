@@ -22,9 +22,9 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
       - run: python -m venv venv
-      - run: npx projen@0.91.13 install
+      - run: npx projen@0.91.14 install
       - name: build
-        run: npx projen@0.91.13 build
+        run: npx projen@0.91.14 build
       - name: Find mutations
         id: self_mutation
         run: |-
