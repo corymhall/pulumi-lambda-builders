@@ -22,9 +22,9 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
       - run: python -m venv venv
-      - run: npx projen@0.91.14 install
+      - run: npx projen@0.91.16 install
       - name: build
-        run: npx projen@0.91.14 build
+        run: npx projen@0.91.16 build
       - name: Find mutations
         id: self_mutation
         run: |-
@@ -49,12 +49,32 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      id-token: write
     if: always() && needs.build.outputs.self_mutation_happened && !(github.event.pull_request.head.repo.full_name != github.repository)
     steps:
+      - name: Generate Pulumi Access Token
+        id: generate_pulumi_token
+        uses: pulumi/auth-actions@v1
+        with:
+          organization: corymhall
+          requested-token-type: urn:pulumi:token-type:access_token:personal
+          scope: user:corymhall
+          export-environment-variables: false
+      - uses: pulumi/esc-action@v1
+        env:
+          PULUMI_ACCESS_TOKEN: ${{ steps.generate_pulumi_token.outputs.pulumi-access-token }}
+        with:
+          environment: github/public
+      - name: Generate token
+        id: generate_token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ env.PROJEN_APP_CLIENT_ID }}
+          private-key: ${{ env.PROJEN_APP_PRIVATE_KEY }}
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.PROJEN_GITHUB_TOKEN }}
+          token: ${{ steps.generate_token.outputs.token }}
           ref: ${{ github.event.pull_request.head.ref }}
           repository: ${{ github.event.pull_request.head.repo.full_name }}
       - name: Download patch

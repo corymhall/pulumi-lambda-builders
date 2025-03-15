@@ -1,11 +1,15 @@
 from projen.github import AutoApproveOptions
 from projen.python import ProjenrcOptions
-from hallcor.pulumi_projen_project_types import PythonComponent
+from hallcor.pulumi_projen_project_types import (
+    GithubCredentials,
+    PulumiEscSetup,
+    PythonComponent,
+)
 
 project = PythonComponent(
     author_email="43035978+corymhall@users.noreply.github.com",
     auto_approve_options=AutoApproveOptions(
-        allowed_usernames=["corymhall"],
+        allowed_usernames=["corymhall", "hallcor-projen-app[bot]"],
         label="auto-approve",
     ),
     author_name="corymhall",
@@ -16,6 +20,12 @@ project = PythonComponent(
     deps=[
         "aws_lambda_builders",
     ],
+    projen_credentials=GithubCredentials.from_app(
+        pulumi_esc_setup=PulumiEscSetup.from_oidc_auth(
+            environment="github/public",
+            organization="corymhall",
+        ),
+    ),
     projenrc_python_options=ProjenrcOptions(projen_version=">=0.91"),
     dev_deps=[
         "pyfakefs",
