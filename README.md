@@ -6,6 +6,9 @@
 
 ---
 
+> This project was created with [@hallcor/pulumi-projen-project-types](https://github.com/corymhall/pulumi-projen-project-types)
+> You can create your own with `npx projen new --from @hallcor/pulumi-projen-project-types python_component`
+
 ## Background
 
 Pulumi Lambda Builders is a library that provides utilities for easily

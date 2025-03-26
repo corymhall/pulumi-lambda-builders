@@ -22,9 +22,12 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
       - run: python -m venv venv
-      - run: npx projen@0.91.16 install
+      - run: npx projen@0.91.18 install
+      - uses: pulumi/actions@v6
+        with:
+          pulumi-version: latest
       - name: build
-        run: npx projen@0.91.16 build
+        run: npx projen@0.91.18 build
       - name: Find mutations
         id: self_mutation
         run: |-

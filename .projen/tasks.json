@@ -28,7 +28,7 @@
       "name": "bump",
       "description": "Bumps version based on latest git tag and generates a changelog entry",
       "env": {
-        "OUTFILE": "version.json",
+        "OUTFILE": "dist/version.json",
         "CHANGELOG": "dist/changelog.md",
         "BUMPFILE": "dist/version.txt",
         "RELEASETAG": "dist/releasetag.txt",
@@ -87,20 +87,6 @@
         }
       ]
     },
-    "dist": {
-      "name": "dist",
-      "steps": [
-        {
-          "exec": "mkdir -p dist"
-        },
-        {
-          "exec": "cp version.json dist/"
-        },
-        {
-          "exec": "touch dist/releasetag.txt"
-        }
-      ]
-    },
     "eject": {
       "name": "eject",
       "description": "Remove projen from the project",
@@ -110,6 +96,15 @@
       "steps": [
         {
           "spawn": "default"
+        }
+      ]
+    },
+    "get-schema": {
+      "name": "get-schema",
+      "description": "Validate schema is valid",
+      "steps": [
+        {
+          "exec": "pulumi package get-schema ./ > /dev/null"
         }
       ]
     },
@@ -130,42 +125,20 @@
     },
     "package": {
       "name": "package",
-      "description": "Creates the distribution package",
-      "steps": [
-        {
-          "spawn": "dist"
-        }
-      ]
+      "description": "Creates the distribution package"
     },
     "post-compile": {
       "name": "post-compile",
-      "description": "Runs after successful compilation"
+      "description": "Runs after successful compilation",
+      "steps": [
+        {
+          "spawn": "get-schema"
+        }
+      ]
     },
     "pre-compile": {
       "name": "pre-compile",
       "description": "Prepare the project for compilation"
-    },
-    "publish:git": {
-      "name": "publish:git",
-      "description": "Prepends the release changelog onto the project changelog, creates a release commit, and tags the release",
-      "env": {
-        "CHANGELOG": "dist/changelog.md",
-        "RELEASE_TAG_FILE": "dist/releasetag.txt",
-        "PROJECT_CHANGELOG_FILE": "",
-        "VERSION_FILE": "dist/version.txt"
-      },
-      "steps": [
-        {
-          "exec": "VERSION=$(cat dist/version.txt); cp dist/version.json . && git add version.json && git commit -m \"chore(release): v$VERSION\""
-        },
-        {
-          "builtin": "release/tag-version"
-        },
-        {
-          "exec": "git push --follow-tags origin main"
-        }
-      ],
-      "condition": "git log --oneline -1 | grep -qv \"chore(release):\""
     },
     "release": {
       "name": "release",
@@ -209,7 +182,7 @@
       "name": "unbump",
       "description": "Restores version to 0.0.0",
       "env": {
-        "OUTFILE": "version.json",
+        "OUTFILE": "dist/version.json",
         "CHANGELOG": "dist/changelog.md",
         "BUMPFILE": "dist/version.txt",
         "RELEASETAG": "dist/releasetag.txt",
@@ -218,7 +191,7 @@
       },
       "steps": [
         {
-          "exec": "git checkout version.json"
+          "builtin": "release/reset-version"
         }
       ]
     }
