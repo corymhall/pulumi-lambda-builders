@@ -90,6 +90,5 @@ cython_debug/
 /dist/changelog.md
 /dist/version.txt
 !/.github/workflows/release.yml
-dist
 node_modules
 !/.projenrc.py

@@ -29,7 +29,7 @@ jobs:
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
       - name: release
-        run: npx projen@0.91.16 release
+        run: npx projen@0.91.18 release
       - name: Check if version has already been tagged
         id: check_tag_exists
         run: |-
@@ -52,17 +52,18 @@ jobs:
           name: build-artifact
           path: dist
           overwrite: true
-  check_tag:
-    name: Check Tag
+  release_github:
+    name: Publish to GitHub Releases
     needs: release
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    outputs:
-      should_release: ${{ steps.tag-exists.outputs.should_release }}
     if: needs.release.outputs.tag_exists != 'true' && needs.release.outputs.latest_commit == github.sha
     steps:
-      - name: Download artifact
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+      - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
           name: build-artifact
@@ -70,90 +71,9 @@ jobs:
       - name: Restore build artifact permissions
         run: cd dist && setfacl --restore=permissions-backup.acl
         continue-on-error: true
-      - id: tag-exists
-        run: |-
-          TAG=$(cat dist/releasetag.txt)
-          if [ ! -z "$TAG" ]
-          then
-          echo "should_release=true" >> $GITHUB_OUTPUT
-          else
-          echo "should_release=false" >> $GITHUB_OUTPUT
-          fi
-          cat $GITHUB_OUTPUT
-  release_git:
-    name: Publish Git Tag
-    needs:
-      - release
-      - check_tag
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      id-token: write
-    if: needs.release.outputs.tag_exists != 'true' && needs.release.outputs.latest_commit == github.sha && needs.check_tag.outputs.should_release == 'true'
-    steps:
-      - name: Generate Pulumi Access Token
-        id: generate_pulumi_token
-        uses: pulumi/auth-actions@v1
-        with:
-          organization: corymhall
-          requested-token-type: urn:pulumi:token-type:access_token:personal
-          scope: user:corymhall
-          export-environment-variables: false
-      - uses: pulumi/esc-action@v1
-        env:
-          PULUMI_ACCESS_TOKEN: ${{ steps.generate_pulumi_token.outputs.pulumi-access-token }}
-        with:
-          environment: github/public
-      - name: Generate token
-        id: generate_token
-        uses: actions/create-github-app-token@v1
-        with:
-          app-id: ${{ env.PROJEN_APP_CLIENT_ID }}
-          private-key: ${{ env.PROJEN_APP_PRIVATE_KEY }}
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          token: ${{ steps.generate_token.outputs.token }}
-          ref: main
-      - name: Download artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: build-artifact
-          path: dist
-      - name: Restore build artifact permissions
-        run: cd dist && setfacl --restore=permissions-backup.acl
-        continue-on-error: true
-      - name: Set git identity
-        run: |-
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
       - name: Release
         env:
-          VERSION_FILE: dist/version.txt
-          CHANGELOG: ""
-          RELEASE_TAG_FILE: dist/releasetag.txt
-          GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
-        run: npx projen@0.91.16 publish:git
-  release_github:
-    name: Publish GitHub Release
-    needs:
-      - release_git
-      - release
-      - check_tag
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    if: needs.release.outputs.tag_exists != 'true' && needs.release.outputs.latest_commit == github.sha && needs.check_tag.outputs.should_release == 'true'
-    steps:
-      - name: Download artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: build-artifact
-          path: dist
-      - name: Restore build artifact permissions
-        run: cd dist && setfacl --restore=permissions-backup.acl
-        continue-on-error: true
-      - name: Create Release
-        env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release create $(cat dist/releasetag.txt) --repo ${{ github.repository }} --notes-file dist/changelog.md --title $(cat dist/releasetag.txt) --verify-tag
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_REF: ${{ github.sha }}
+        run: errout=$(mktemp); gh release create $(cat dist/releasetag.txt) -R $GITHUB_REPOSITORY -F dist/changelog.md -t $(cat dist/releasetag.txt) --target $GITHUB_REF 2> $errout && true; exitcode=$?; if [ $exitcode -ne 0 ] && ! grep -q "Release.tag_name already exists" $errout; then cat $errout; exit $exitcode; fi
