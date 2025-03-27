@@ -12,6 +12,7 @@
         "postinstall": "npm run add:all"
     },
     "dependencies": {
+        "@hallcor/lambda-builders": "file:sdks/hallcor-lambda-builders",
         "@pulumi/aws": "^6.71.0",
         "@pulumi/lambda-builders": "file:sdks/lambda-builders",
         "@pulumi/pulumi": "^3.159.0"

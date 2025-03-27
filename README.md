@@ -59,7 +59,7 @@ test_lambda = aws.lambda_.Function("my_lambda",
 import * as path from 'path';
 import * as pulumi from '@pulumi/pulumi';
 import * as aws from '@pulumi/aws';
-import * as builder from '@pulumi/lambda-builder';
+import * as builder from '@hallcor/lambda-builders';
 
 const code = new builder.BuildNodejs('builder', {
   entry: path.join(__dirname, 'path/to/index.ts'),

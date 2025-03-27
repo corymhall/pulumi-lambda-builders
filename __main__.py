@@ -14,6 +14,7 @@ if __name__ == "__main__":
     # subclasses in this package, infer their schema and host a provider that
     # allows constructing these components from a Pulumi program.
     component_provider_host(
+        namespace="hallcor",
         name="lambda-builders",
         components=[
             BuildCustomMake,

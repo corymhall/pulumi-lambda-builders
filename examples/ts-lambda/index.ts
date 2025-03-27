@@ -1,5 +1,5 @@
 import * as path from 'path';
-import * as builder from '@pulumi/lambda-builders';
+import * as builder from '@hallcor/lambda-builders';
 import * as aws from '@pulumi/aws';
 
 const role = new aws.iam.Role('test-role', {
