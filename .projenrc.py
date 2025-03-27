@@ -41,5 +41,6 @@ project.test_task.prepend_exec(
 )
 
 project.add_git_ignore("node_modules")
+project.add_git_ignore("examples/**/sdks")
 
 project.synth()

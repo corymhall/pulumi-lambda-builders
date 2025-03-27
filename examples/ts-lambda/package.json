@@ -1,0 +1,19 @@
+{
+    "name": "ts-lambda",
+    "main": "index.ts",
+    "devDependencies": {
+        "@types/node": "^18",
+        "esbuild": "^0.25.1",
+        "typescript": "^5.0.0"
+    },
+    "scripts": {
+        "add:default": "pulumi package add ../../",
+        "add:all": "npm run add:default",
+        "postinstall": "npm run add:all"
+    },
+    "dependencies": {
+        "@pulumi/aws": "^6.71.0",
+        "@pulumi/lambda-builders": "file:sdks/lambda-builders",
+        "@pulumi/pulumi": "^3.159.0"
+    }
+}

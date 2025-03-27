@@ -91,4 +91,5 @@ cython_debug/
 /dist/version.txt
 !/.github/workflows/release.yml
 node_modules
+examples/**/sdks
 !/.projenrc.py
