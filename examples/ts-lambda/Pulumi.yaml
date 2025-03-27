@@ -1,0 +1,10 @@
+name: ts-lambda
+description: A minimal AWS Lambda Builders example
+runtime:
+  name: nodejs
+  options:
+    packagemanager: npm
+plugins:
+  providers:
+    - name: lambda-builders
+      path: ../../
