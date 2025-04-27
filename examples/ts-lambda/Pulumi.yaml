@@ -8,3 +8,5 @@ plugins:
   providers:
     - name: lambda-builders
       path: ../../
+packages:
+  lambda-builders: ../../@0.0.0

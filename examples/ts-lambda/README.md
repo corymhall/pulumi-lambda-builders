@@ -5,6 +5,7 @@
 Install dependencies
 
 ```console
+$ pulumi install
 $ npm install
 ```
 
